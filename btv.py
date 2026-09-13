@@ -21,7 +21,7 @@ from aiogram.types import (
 from aiohttp import web
 
 # --- CẤU HÌNH CƠ BẢN ---
-TOKEN = "8954729214:AAGOGoidwCLUzJ_pIfkhdAy8nzjpCunwBTc"  # Thay Token chuẩn tại đây
+TOKEN = "8954729214:AAGOGoidwCLUzJ_pIfkhdAy8nzjpCunwBTc"
 ADMIN_ID = 8985238179
 GROUP_CHAT_ID = None 
 
@@ -37,7 +37,6 @@ recent_tai_xiu = ['T', 'X', 'T', 'X', 'T', 'X', 'T', 'X', 'T', 'X', 'T', 'X']
 recent_chan_le = ['C', 'L', 'C', 'L', 'C', 'L', 'C', 'L', 'C', 'L', 'C', 'L']
 game_running = True
 
-# Cấu hình Khuyến Mãi Nạp: {"percent": float, "expire_at": datetime}
 promo_config = {"percent": 0.0, "expire_at": None}
 
 users_db = {
@@ -97,7 +96,6 @@ main_menu_kb = ReplyKeyboardMarkup(
     resize_keyboard=True
 )
 
-# --- INLINE KEYBOARD CHO DANH SÁCH GAME ---
 def get_game_list_inline_kb():
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="Tài Xỉu 🎲", callback_query_data="game_tx"), InlineKeyboardButton(text="Chẵn Lẻ ⚫️", callback_query_data="game_cl")],
@@ -132,7 +130,6 @@ async def unlock_chat(chat_id: int):
     except Exception as e:
         logging.warning(f"Không thể mở khóa chat: {e}")
 
-# --- THÔNG BÁO CHÀO MỪNG ---
 @dp.message(F.new_chat_members)
 async def welcome_new_member(message: types.Message):
     for member in message.new_chat_members:
@@ -155,7 +152,6 @@ async def welcome_new_member(message: types.Message):
 async def cmd_admin_kmnap(message: types.Message):
     if message.from_user.id != ADMIN_ID:
         return
-    # Cú pháp: /kmnap (x3%) (00:00 14/09/2026) hoặc /kmnap 3 00:00 14/09/2026
     text = message.text.replace("(", "").replace(")", "").replace("%", "").replace("x", "")
     args = text.split()
     if len(args) < 4:
@@ -305,9 +301,12 @@ async def btn_game_list(message: types.Message):
     text = "🎮 <b>DANH SÁCH GAME CÓ SẴN</b>\n\nBấm vào nút dưới đây để xem hướng dẫn chi tiết từng game:"
     await message.answer(text, reply_markup=get_game_list_inline_kb())
 
-# --- XỬ LÝ SỰ KIỆN CALLBACK KHI BẤM NÚT DANH SÁCH GAME ---
+# --- XỬ LÝ SỰ KIỆN CALLBACK KHI BẤM NÚT DANH SÁCH GAME (ĐÃ SỬA LỖI NÚT KHÔNG PHẢN HỒI) ---
 @dp.callback_query(F.data.startswith("game_"))
 async def process_game_callback(callback: types.CallbackQuery):
+    # Trả lời Callback ngay lập tức để tránh nốt bấm bị xoay tròn / timeout
+    await callback.answer()
+    
     game_code = callback.data
     
     if game_code == "game_tx":
@@ -401,8 +400,10 @@ async def process_game_callback(callback: types.CallbackQuery):
     else:
         text = "Mục game đang cập nhật!"
 
-    await callback.message.answer(text)
-    await callback.answer()
+    try:
+        await callback.message.answer(text)
+    except Exception as e:
+        logging.error(f"Lỗi gửi tin nhắn callback: {e}")
 
 @dp.message(Command("sodu"))
 @dp.message(F.text == "💰 Số Dư")
@@ -424,7 +425,6 @@ async def cmd_nap(message: types.Message):
     user = get_user(user_id, name)
     content_nap = f"NAP{user_id}{random.randint(1000,9999)}"
     
-    # Tính toán khuyến mãi nạp nếu có
     bonus_promo = 0.0
     if promo_config["expire_at"] and datetime.now() <= promo_config["expire_at"]:
         bonus_promo = amount * (promo_config["percent"] / 100.0)
@@ -434,7 +434,6 @@ async def cmd_nap(message: types.Message):
     user["total_nap"] += amount
     user["balance"] += total_add
 
-    # Trả hoa hồng 0.5% cho người giới thiệu
     ref_id = user.get("referrer_id")
     if ref_id and ref_id in users_db:
         ref_bonus = amount * 0.005
@@ -612,7 +611,6 @@ async def catch_all_messages(message: types.Message):
     text = message.text.lower().strip()
     parts = text.split()
 
-    # --- 1. GAME TRONG NHÓM (TÀI XỈU / CHẲN LẺ) ---
     if message.chat.type in ["group", "supergroup"]:
         if GROUP_CHAT_ID != message.chat.id:
             GROUP_CHAT_ID = message.chat.id
@@ -634,9 +632,7 @@ async def catch_all_messages(message: types.Message):
                 await message.reply(f"✅ <b>{name}</b> cược <b>{amount:,.0f} VND</b> vào <b>{bet_type.upper()}</b>!")
         return
 
-    # --- 2. MINI GAMES (CHƠI TRỰC TIẾP VỚI BOT) ---
-
-    # GAME BỎNG NGÔ: Ngo [số tiền]
+    # GAME BỎNG NGÔ
     if text.startswith("/ngo") or text.startswith("ngo"):
         if len(parts) >= 2 and parts[1].isdigit():
             amount = float(parts[1])
@@ -650,7 +646,6 @@ async def catch_all_messages(message: types.Message):
             user["balance"] -= amount
             user["total_cuoc"] += amount
             
-            # Kết quả luôn thua
             loss_text = (
                 f"🍿 <b>KẾT QUẢ BỎNG NGÔ:</b>\n"
                 f"❌ Ngô Đổ Tràn Ra Ngoài! Bạn đã <b>THUA</b>!\n"
@@ -662,7 +657,7 @@ async def catch_all_messages(message: types.Message):
             await message.reply("⚠️ Cú pháp: <code>/Ngo [số tiền cược]</code>")
         return
 
-    # GAME BÓNG RỔ: /br [số tiền]
+    # GAME BÓNG RỔ
     if text.startswith("/br"):
         if len(parts) >= 2 and parts[1].isdigit():
             amount = float(parts[1])
@@ -678,7 +673,6 @@ async def catch_all_messages(message: types.Message):
 
             dice_msg = await bot.send_dice(chat_id=message.chat.id, emoji="🏀")
             await asyncio.sleep(3.5)
-            # Trong Telegram 🏀: Giá trị 4, 5 là trúng rổ; 1, 2, 3 là hụt.
             val = dice_msg.dice.value
             if val in [4, 5]:
                 win_amt = amount * 1.90
@@ -701,7 +695,7 @@ async def catch_all_messages(message: types.Message):
             await message.reply("⚠️ Cú pháp: <code>/BR [số tiền cược]</code>")
         return
 
-    # GAME BÓNG ĐÁ: /bd [số tiền]
+    # GAME BÓNG ĐÁ
     if text.startswith("/bd"):
         if len(parts) >= 2 and parts[1].isdigit():
             amount = float(parts[1])
@@ -717,7 +711,6 @@ async def catch_all_messages(message: types.Message):
 
             dice_msg = await bot.send_dice(chat_id=message.chat.id, emoji="⚽")
             await asyncio.sleep(3.5)
-            # Trong Telegram ⚽: Giá trị 3, 4, 5 là vào gôn; 1, 2 là hụt/trúng xà.
             val = dice_msg.dice.value
             if val in [3, 4, 5]:
                 win_amt = amount * 1.50
@@ -740,7 +733,7 @@ async def catch_all_messages(message: types.Message):
             await message.reply("⚠️ Cú pháp: <code>/BD [số tiền cược]</code>")
         return
 
-    # GAME BOWLING: /chan hoặc /le [số tiền]
+    # GAME BOWLING
     if text.startswith(("/chan", "/le")):
         if len(parts) >= 2 and parts[1].isdigit():
             bet_choice = parts[0].replace("/", "")
@@ -786,7 +779,7 @@ async def catch_all_messages(message: types.Message):
             await message.reply("⚠️ Cú pháp: <code>/Chan [số tiền]</code> hoặc <code>/Le [số tiền]</code>")
         return
 
-    # GAME PHI TIÊU: /vong1 -> /vong5 [số tiền]
+    # GAME PHI TIÊU
     if text.startswith(("/vong1", "/vong2", "/vong3", "/vong4", "/vong5")):
         if len(parts) >= 2 and parts[1].isdigit():
             target_vong = int(parts[0].replace("/vong", ""))
@@ -803,7 +796,6 @@ async def catch_all_messages(message: types.Message):
 
             dice_msg = await bot.send_dice(chat_id=message.chat.id, emoji="🎯")
             await asyncio.sleep(3.5)
-            # Ánh xạ kết quả dice 🎯 sang vòng: 6->Vòng 1 (Tâm), 5->Vòng 2, 4->Vòng 3, 3->Vòng 4, 2->Vòng 5, 1->Ra ngoài (Thua)
             val = dice_msg.dice.value
             hit_vong = 0
             if val == 6: hit_vong = 1
@@ -834,7 +826,7 @@ async def catch_all_messages(message: types.Message):
             await message.reply("⚠️ Cú pháp: <code>/vong1 [số tiền]</code> đến <code>/vong5 [số tiền]</code>")
         return
 
-    # GAME KÉO BÚA BAO: /bua, /keo, /bao [số tiền]
+    # GAME KÉO BÚA BAO
     if text.startswith(("/bua", "/keo", "/bao")):
         if len(parts) >= 2 and parts[1].isdigit():
             user_choice = parts[0].replace("/", "")
@@ -856,12 +848,10 @@ async def catch_all_messages(message: types.Message):
             bot_icon = icon_map[bot_pick]
             user_icon = icon_map[user_choice]
 
-            msg = await message.reply(f"🎲 Bot đang đưa ra: <b>{bot_icon}</b> ...")
+            await message.reply(f"🎲 Bot đang đưa ra: <b>{bot_icon}</b> ...")
             await asyncio.sleep(1.5)
 
-            # Quy tắc: Búa thắng Kéo, Kéo thắng Bao, Bao thắng Búa
             if user_choice == bot_pick:
-                # Hòa -> Hoàn 50%
                 refund = amount * 0.5
                 user["balance"] += refund
                 res_text = (
@@ -873,7 +863,6 @@ async def catch_all_messages(message: types.Message):
             elif (user_choice == "keo" and bot_pick == "bao") or \
                  (user_choice == "bua" and bot_pick == "keo") or \
                  (user_choice == "bao" and bot_pick == "bua"):
-                # Thắng x1.95
                 win_amt = amount * 1.95
                 user["balance"] += win_amt
                 res_text = (
@@ -883,7 +872,6 @@ async def catch_all_messages(message: types.Message):
                     f"💵 Số dư hiện tại: <b>{user['balance']:,.0f} VND</b>"
                 )
             else:
-                # Thua
                 res_text = (
                     f"❌ <b>KẾT QUẢ KÉO BÚA BAO: THUA!</b>\n"
                     f"Bạn: {user_icon} vs Bot: {bot_icon}\n"
@@ -1004,7 +992,6 @@ async def game_loop():
             total_win_money = 0
             total_lose_money = 0
             
-            # Xử lý trả thưởng và gửi thông báo riêng đến từng khách cược
             for uid, bet in bets_current.items():
                 b_type, b_amt = bet["type"], bet["amount"]
                 user = get_user(uid)
@@ -1020,7 +1007,6 @@ async def game_loop():
                     user["balance"] += win_total
                     total_win_money += payout
                     
-                    # Gửi tin nhắn riêng thắng cược cho khách qua bot
                     try:
                         pm_win = (
                             f"🎉 <b>THÔNG BÁO THẮNG CƯỢC PHIÊN #{current_session}</b> 🎉\n\n"
@@ -1035,7 +1021,6 @@ async def game_loop():
                         pass
                 else:
                     total_lose_money += b_amt
-                    # Gửi tin nhắn riêng thua cược cho khách qua bot
                     try:
                         pm_lose = (
                             f"❌ <b>THÔNG BÁO KẾT QUẢ PHIÊN #{current_session}</b> ❌\n\n"
