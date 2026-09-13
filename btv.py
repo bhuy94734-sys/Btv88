@@ -2,6 +2,8 @@ import asyncio
 import logging
 import os
 import random
+import string
+from datetime import datetime, timedelta
 from aiogram import Bot, Dispatcher, F, types
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
@@ -17,7 +19,7 @@ from aiogram.types import (
 from aiohttp import web
 
 # --- CẤU HÌNH CƠ BẢN ---
-TOKEN = "8954729214:AAF1Bwsm9CGJbBY7AX4C-T8j7ra9q18AMTc"  # Dán Token chuẩn từ BotFather vào đây
+TOKEN = "8954729214:AAF1Bwsm9CGJbBY7AX4C-T8j7ra9q18AMTc"  # Thay Token chuẩn tại đây
 ADMIN_ID = 8985238179
 GROUP_CHAT_ID = None 
 
@@ -33,7 +35,6 @@ recent_tai_xiu = ['T', 'X', 'T', 'X', 'T', 'X', 'T', 'X', 'T', 'X', 'T', 'X']
 recent_chan_le = ['C', 'L', 'C', 'L', 'C', 'L', 'C', 'L', 'C', 'L', 'C', 'L']
 game_running = True
 
-# Lưu trữ dữ liệu mở rộng
 users_db = {
     ADMIN_ID: {
         "balance": 50000000.0, 
@@ -45,12 +46,13 @@ users_db = {
     }
 }
 bets_current = {} 
+# Format active_codes: { "CODE_NAME": {"amount": float, "uses": int, "expire_at": datetime} }
 active_codes = {} 
 
 def get_user(user_id: int, name: str = "Thành viên"):
     if user_id not in users_db:
         users_db[user_id] = {
-            "balance": 50000.0, 
+            "balance": 100.0, 
             "name": name,
             "total_nap": 0.0,
             "total_cuoc": 0.0,
@@ -72,14 +74,14 @@ async def set_bot_commands(bot: Bot):
     except Exception as e:
         logging.error(f"Lỗi set commands: {e}")
 
-# MENU BÀN PHÍM CẬP NHẬT ĐẦY ĐỦ CÁC NÚT
+# MENU BÀN PHÍM CẬP NHẬT THÊM NÚT CSKH
 main_menu_kb = ReplyKeyboardMarkup(
     keyboard=[
         [KeyboardButton(text="👤 Tài Khoản Của Tôi"), KeyboardButton(text="🎮 Danh Sách Game")],
         [KeyboardButton(text="💰 Số Dư"), KeyboardButton(text="💳 Nạp Tiền"), KeyboardButton(text="💸 Rút Tiền")],
         [KeyboardButton(text="🏆 Top Nạp"), KeyboardButton(text="🔥 Top Cược")],
         [KeyboardButton(text="📜 Lịch Sử Nạp"), KeyboardButton(text="📜 Lịch Sử Rút")],
-        [KeyboardButton(text="🎁 Nhập Code")]
+        [KeyboardButton(text="🎁 Nhập Code"), KeyboardButton(text="🎧 CSKH")]
     ],
     resize_keyboard=True
 )
@@ -109,7 +111,7 @@ async def unlock_chat(chat_id: int):
     except Exception as e:
         logging.warning(f"Không thể mở khóa chat: {e}")
 
-# --- BẮT THÀNH VIÊN MỚI THAM GIA NHÓM (THÔNG BÁO CHÀO MỪNG) ---
+# --- THÔNG BÁO CHÀO MỪNG ---
 @dp.message(F.new_chat_members)
 async def welcome_new_member(message: types.Message):
     for member in message.new_chat_members:
@@ -127,7 +129,74 @@ async def welcome_new_member(message: types.Message):
         )
         await message.answer(welcome_text)
 
-# --- XỬ LÝ LỆNH VÀ NÚT BẤM ---
+# --- LỆNH ADMIN ---
+@dp.message(Command("cong"))
+async def cmd_admin_cong(message: types.Message):
+    if message.from_user.id != ADMIN_ID:
+        return
+    args = message.text.split()
+    if len(args) < 3:
+        await message.reply("⚠️ Cú pháp: <code>/cong [User_ID] [Số_tiền]</code>")
+        return
+    try:
+        target_id = int(args[1])
+        amount = float(args[2])
+        target_user = get_user(target_id)
+        target_user["balance"] += amount
+        await message.reply(f"✅ Đã cộng <b>{amount:,.0f} VND</b> cho ID <code>{target_id}</code>. Số dư mới: {target_user['balance']:,.0f} VND")
+    except ValueError:
+        await message.reply("❌ ID hoặc số tiền không hợp lệ!")
+
+@dp.message(Command("tru"))
+async def cmd_admin_tru(message: types.Message):
+    if message.from_user.id != ADMIN_ID:
+        return
+    args = message.text.split()
+    if len(args) < 3:
+        await message.reply("⚠️ Cú pháp: <code>/tru [User_ID] [Số_tiền]</code>")
+        return
+    try:
+        target_id = int(args[1])
+        amount = float(args[2])
+        target_user = get_user(target_id)
+        target_user["balance"] = max(0.0, target_user["balance"] - amount)
+        await message.reply(f"✅ Đã trừ <b>{amount:,.0f} VND</b> của ID <code>{target_id}</code>. Số dư mới: {target_user['balance']:,.0f} VND")
+    except ValueError:
+        await message.reply("❌ ID hoặc số tiền không hợp lệ!")
+
+@dp.message(Command("tao_code"))
+async def cmd_admin_tao_code(message: types.Message):
+    if message.from_user.id != ADMIN_ID:
+        return
+    args = message.text.split()
+    if len(args) < 4:
+        await message.reply("⚠️ Cú pháp: <code>/tao_code [Mã_Code] [Số_tiền] [Số_lượt]</code>")
+        return
+    code = args[1].upper()
+    try:
+        amount = float(args[2])
+        uses = int(args[3])
+        active_codes[code] = {"amount": amount, "uses": uses, "expire_at": None}
+        await message.reply(f"🎁 Đã tạo Giftcode <b>{code}</b>: <b>{amount:,.0f} VND</b> ({uses} lượt dùng)")
+    except ValueError:
+        await message.reply("❌ Số tiền hoặc số lượt không hợp lệ!")
+
+@dp.message(Command("set_hu"))
+async def cmd_admin_set_hu(message: types.Message):
+    global current_jackpot
+    if message.from_user.id != ADMIN_ID:
+        return
+    args = message.text.split()
+    if len(args) < 2:
+        await message.reply("⚠️ Cú pháp: <code>/set_hu [Số_tiền]</code>")
+        return
+    try:
+        current_jackpot = float(args[1])
+        await message.reply(f"🏺 Đã cập nhật Hũ Jackpot thành: <b>{current_jackpot:,.0f} VND</b>")
+    except ValueError:
+        await message.reply("❌ Số tiền không hợp lệ!")
+
+# --- XỬ LÝ LỆNH NGƯỜI DÙNG & NÚT BẤM ---
 @dp.message(Command("start"))
 async def cmd_start(message: types.Message):
     global GROUP_CHAT_ID
@@ -194,26 +263,42 @@ async def cmd_nap(message: types.Message):
     
     user_id = message.from_user.id
     name = message.from_user.full_name
+    username = f"@{message.from_user.username}" if message.from_user.username else name
     user = get_user(user_id, name)
     content_nap = f"NAP{user_id}{random.randint(1000,9999)}"
     
-    # Ghi lịch sử giả lập cho Demo
     user["history_nap"].append(f"Nạp {amount:,.0f} VND ({content_nap})")
     user["total_nap"] += amount
     
     qr_caption = (
-        f"🏦 <b>MÃ QR CHUYỂN KHOẢN TỰ ĐỘNG</b>\n\n"
+        f"💳 <b>HƯỚNG DẪN NẠP TIỀN TỰ ĐỘNG</b> 💳\n\n"
+        f"📌 <b>BƯỚC 1:</b> Quét mã QR bên dưới hoặc chuyển khoản thủ công theo thông tin:\n"
         f"• Ngân hàng: <b>MB BANK</b>\n"
         f"• Số tài khoản: <code>2105200999999</code>\n"
         f"• Chủ tài khoản: <b>KHONG QUOC BAO</b>\n"
         f"• Số tiền: <b>{amount:,.0f} VND</b>\n"
-        f"• Nội dung chuyển khoản: <code>{content_nap}</code>"
+        f"• Nội dung CK bắt buộc: <code>{content_nap}</code>\n\n"
+        f"📌 <b>BƯỚC 2:</b> Nhập đúng <b>Nội dung chuyển khoản</b> để tiền tự động cộng vào tài khoản trong 1-3 phút.\n"
+        f"⚠️ <i>Lưu ý: Chuyển sai nội dung vui lòng liên hệ Admin để hỗ trợ xử lý!</i>"
     )
     qr_url = f"https://img.vietqr.io/image/MB-2105200999999-compact.png?amount={amount}&addInfo={content_nap}&accountName=KHONG%20QUOC%20BAO"
+    
     try:
         await message.answer_photo(photo=qr_url, caption=qr_caption)
     except Exception:
         await message.answer(qr_caption)
+
+    try:
+        admin_notice = (
+            f"📥 <b>THÔNG BÁO NẠP TIỀN MỚI</b>\n\n"
+            f"👤 Khách hàng: <b>{name}</b> ({username})\n"
+            f"🆔 ID: <code>{user_id}</code>\n"
+            f"💵 Số tiền: <b>{amount:,.0f} VND</b>\n"
+            f"📝 Nội dung: <code>{content_nap}</code>"
+        )
+        await bot.send_message(ADMIN_ID, admin_notice)
+    except Exception as e:
+        logging.error(f"Không thể gửi thông báo cho Admin: {e}")
 
 @dp.message(Command("rut"))
 @dp.message(F.text == "💸 Rút Tiền")
@@ -221,6 +306,7 @@ async def cmd_rut(message: types.Message):
     args = message.text.split(maxsplit=3)
     user_id = message.from_user.id
     name = message.from_user.full_name
+    username = f"@{message.from_user.username}" if message.from_user.username else name
     user = get_user(user_id, name)
     
     if len(args) < 4:
@@ -240,6 +326,20 @@ async def cmd_rut(message: types.Message):
     user["balance"] -= amount
     user["history_rut"].append(f"Rút {amount:,.0f} VND -> STK: {stk} ({bank})")
     await message.reply(f"✅ Đã tạo lệnh rút <b>{amount:,.0f} VND</b> về TK <code>{stk} ({bank})</code> thành công!")
+
+    try:
+        admin_notice = (
+            f"📤 <b>YÊU CẦU RÚT TIỀN MỚI</b>\n\n"
+            f"👤 Khách hàng: <b>{name}</b> ({username})\n"
+            f"🆔 ID: <code>{user_id}</code>\n"
+            f"💸 Số tiền rút: <b>{amount:,.0f} VND</b>\n"
+            f"🏦 STK: <code>{stk}</code>\n"
+            f"🏛️ Ngân hàng: <b>{bank}</b>\n"
+            f"💰 Số dư còn lại: {user['balance']:,.0f} VND"
+        )
+        await bot.send_message(ADMIN_ID, admin_notice)
+    except Exception as e:
+        logging.error(f"Không thể gửi thông báo cho Admin: {e}")
 
 @dp.message(F.text == "🏆 Top Nạp")
 async def btn_top_nap(message: types.Message):
@@ -275,6 +375,15 @@ async def btn_history_rut(message: types.Message):
     text = "💸 <b>LỊCH SỬ RÚT TIỀN GẦN ĐÂY:</b>\n\n" + "\n".join([f"• {item}" for item in user["history_rut"][-5:]])
     await message.answer(text)
 
+# --- THÊM NÚT CHĂM SÓC KHÁCH HÀNG ---
+@dp.message(F.text == "🎧 CSKH")
+async def btn_cskh(message: types.Message):
+    text = (
+        "🎧 <b>MỌI VẤN ĐỀ VUI LÒNG LIÊN HỆ:</b>\n\n"
+        "<b>CSKH:</b> @Miutea88"
+    )
+    await message.answer(text)
+
 @dp.message(Command("code"))
 @dp.message(F.text == "🎁 Nhập Code")
 async def cmd_code(message: types.Message):
@@ -284,17 +393,33 @@ async def cmd_code(message: types.Message):
         return
     code = args[1].upper()
     user = get_user(message.from_user.id, message.from_user.full_name)
-    if code not in active_codes or active_codes[code]["uses"] <= 0:
+    
+    if code not in active_codes:
         await message.reply("❌ Mã Giftcode không tồn tại hoặc đã hết hạn!")
         return
+        
     gift = active_codes[code]
-    user["balance"] += gift["amount"]
-    gift["uses"] -= 1
+    
+    # Kiểm tra thời gian hết hạn code (3 phút)
+    if gift.get("expire_at") and datetime.now() > gift["expire_at"]:
+        del active_codes[code]
+        await message.reply("❌ Mã Giftcode này đã quá thời gian sử dụng (3 phút)!")
+        return
+
     if gift["uses"] <= 0:
         del active_codes[code]
-    await message.reply(f"🎁 Bạn nhận được <b>{gift['amount']:,.0f} VND</b>!")
+        await message.reply("❌ Mã Giftcode này đã được sử dụng!")
+        return
 
-# --- LÍNH GÁCH TỰ ĐỘNG BẮT ID NHÓM VÀ XỬ LÝ CƯỢC ---
+    user["balance"] += gift["amount"]
+    gift["uses"] -= 1
+    
+    # Xóa code ngay lập tức vì giới hạn 1 lượt dùng
+    if gift["uses"] <= 0:
+        del active_codes[code]
+
+    await message.reply(f"🎁 Bạn nhận được <b>{gift['amount']:,.0f} VND</b> từ Giftcode <code>{code}</code>!")
+
 @dp.message()
 async def catch_all_messages(message: types.Message):
     global GROUP_CHAT_ID
@@ -326,6 +451,42 @@ async def catch_all_messages(message: types.Message):
                 user["total_cuoc"] += amount
                 bets_current[user_id] = {"type": bet_type, "amount": amount, "name": name}
                 await message.reply(f"✅ <b>{name}</b> cược <b>{amount:,.0f} VND</b> vào <b>{bet_type.upper()}</b>!")
+
+# --- THÊM CƠ CHẾ TỰ ĐỘNG PHÁT CODE RANDOM 35 PHÚT ---
+async def auto_code_loop():
+    await asyncio.sleep(10) # Chờ bot sẵn sàng
+    while game_running:
+        try:
+            if GROUP_CHAT_ID:
+                generated_codes = []
+                expire_time = datetime.now() + timedelta(minutes=3)
+                
+                for _ in range(5):
+                    # Tạo mã random 6 ký tự
+                    code_str = "BTV" + ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+                    # Tiền random từ 10 đến 2,000 VND
+                    rand_val = random.randint(10, 2000)
+                    
+                    active_codes[code_str] = {
+                        "amount": float(rand_val),
+                        "uses": 1,
+                        "expire_at": expire_time
+                    }
+                    generated_codes.append(f"• <code>{code_str}</code>: <b>{rand_val:,.0f} VND</b>")
+                
+                code_text = (
+                    f"🎁 <b>CƠN MƯA GIFTCODE MIỄN PHÍ (5 MÃ)</b> 🎁\n\n"
+                    + "\n".join(generated_codes) + "\n\n"
+                    f"⏰ <b>Thời gian hiệu lực:</b> Đúng <b>3 phút</b>!\n"
+                    f"📌 <i>Mỗi code chỉ dùng cho 1 tài khoản duy nhất. Nhập nhanh cú pháp:</i>\n"
+                    f"👉 <code>/code [Mã_Code]</code>"
+                )
+                await bot.send_message(GROUP_CHAT_ID, code_text)
+        except Exception as e:
+            logging.error(f"Lỗi tự động phát code: {e}")
+            
+        # Lặp lại sau mỗi 35 phút (35 * 60 = 2100 giây)
+        await asyncio.sleep(2100)
 
 # --- VÒNG LẬP TRÒ CHƠI TỰ ĐỘNG ---
 async def game_loop():
@@ -442,22 +603,27 @@ async def game_loop():
             logging.error(f"Lỗi game loop: {e}")
             await asyncio.sleep(5)
 
+# --- SERVER WEB UPTIME ---
 async def handle_ping(request):
-    return web.Response(text="BTV88 Bot Active!")
+    return web.Response(text="BTV88 Bot Active", status=200)
 
-async def start_web_server():
+async def main():
+    await set_bot_commands(bot)
+    
     app = web.Application()
     app.router.add_get("/", handle_ping)
+    app.router.add_head("/", handle_ping)
+    
     runner = web.AppRunner(app)
     await runner.setup()
     port = int(os.environ.get("PORT", 10000))
     site = web.TCPSite(runner, "0.0.0.0", port)
     await site.start()
-
-async def main():
-    await set_bot_commands(bot)
-    await start_web_server()
+    
+    # Chạy vòng lặp game và tự động tạo code ngầm
     asyncio.create_task(game_loop())
+    asyncio.create_task(auto_code_loop())
+    
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
