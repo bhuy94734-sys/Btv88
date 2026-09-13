@@ -9,6 +9,8 @@ from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 from aiogram.filters import Command, CommandStart
 from aiogram.fsm.storage.memory import MemoryStorage
+from aiogram.fsm.context import FSMContext
+from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import (
     KeyboardButton,
     ReplyKeyboardMarkup,
@@ -29,6 +31,10 @@ logging.basicConfig(level=logging.INFO)
 bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
 storage = MemoryStorage()
 dp = Dispatcher(storage=storage)
+
+# --- FSM STATES ---
+class NapMoneyState(StatesGroup):
+    waiting_for_amount = State()
 
 # --- BIẾN TRẠNG THÁI TRÒ CHƠI & KHUYẾN MÃI ---
 current_session = 105027
@@ -150,7 +156,84 @@ async def welcome_new_member(message: types.Message):
         )
         await message.answer(welcome_text)
 
-# --- LỆNH ADMIN ---
+# --- LỆNH ADMIN MỚI VÀ CŨ ---
+@dp.message(Command("checkplayer"))
+async def cmd_admin_checkplayer(message: types.Message):
+    if message.from_user.id != ADMIN_ID:
+        return
+    args = message.text.split()
+    if len(args) < 2:
+        await message.reply("⚠️ Cú pháp: <code>/checkplayer (id)</code>")
+        return
+    try:
+        target_id = int(args[1].replace("(", "").replace(")", ""))
+        if target_id not in users_db:
+            await message.reply("❌ Không tìm thấy người chơi này trong hệ thống!")
+            return
+        target_user = users_db[target_id]
+        info_text = (
+            f"🔍 <b>THÔNG TIN NGƯỜI CHƠI</b>\n\n"
+            f"🆔 <b>ID:</b> <code>{target_id}</code>\n"
+            f"👤 <b>Tên:</b> {target_user['name']}\n"
+            f"💰 <b>Số dư:</b> <b>{target_user['balance']:,.0f} VND</b>\n"
+            f"💳 <b>Tổng nạp:</b> {target_user['total_nap']:,.0f} VND\n"
+            f"🔥 <b>Tổng cược:</b> {target_user['total_cuoc']:,.0f} VND\n"
+            f"👥 <b>Số người đã mời:</b> {target_user.get('invite_count', 0)}"
+        )
+        await message.reply(info_text)
+    except ValueError:
+        await message.reply("❌ ID không hợp lệ!")
+
+@dp.message(Command("taocode"))
+async def cmd_admin_taocode_new(message: types.Message):
+    if message.from_user.id != ADMIN_ID:
+        return
+    text = message.text.replace("(", " ").replace(")", " ")
+    args = text.split()
+    if len(args) < 4:
+        await message.reply("⚠️ Cú pháp: <code>/taocode (mã code) (số tiền) (số lượt dùng)</code>")
+        return
+    code = args[1].upper()
+    try:
+        amount = float(args[2])
+        uses = int(args[3])
+        active_codes[code] = {"amount": amount, "uses": uses, "expire_at": None}
+        await message.reply(f"🎁 Đã tạo Giftcode <b>{code}</b>: <b>{amount:,.0f} VND</b> ({uses} lượt dùng)")
+    except ValueError:
+        await message.reply("❌ Số tiền hoặc số lượt không hợp lệ!")
+
+@dp.message(Command("tbao"))
+async def cmd_admin_tbao(message: types.Message):
+    if message.from_user.id != ADMIN_ID:
+        return
+    text_content = message.text.split(maxsplit=1)
+    if len(text_content) < 2:
+        await message.reply("⚠️ Cú pháp: <code>/tbao (nội dung)</code>")
+        return
+    
+    notice_text = text_content[1].strip()
+    if notice_text.startswith("(") and notice_text.endswith(")"):
+        notice_text = notice_text[1:-1]
+        
+    broadcast_msg = f"📢 <b>THÔNG BÁO TỪ HỆ THỐNG</b> 📢\n\n{notice_text}"
+    
+    count = 0
+    for user_id in list(users_db.keys()):
+        try:
+            await bot.send_message(user_id, broadcast_msg)
+            count += 1
+            await asyncio.sleep(0.05)
+        except Exception:
+            pass
+            
+    if GROUP_CHAT_ID:
+        try:
+            await bot.send_message(GROUP_CHAT_ID, broadcast_msg)
+        except Exception:
+            pass
+            
+    await message.reply(f"✅ Đã gửi thông báo thành công tới {count} người dùng!")
+
 @dp.message(Command("kmnap"))
 async def cmd_admin_kmnap(message: types.Message):
     if message.from_user.id != ADMIN_ID:
@@ -261,7 +344,7 @@ async def cmd_start(message: types.Message):
         f"• Đặt Lẻ: <code>/L 10000</code>\n\n"
         f"💳 <b>LỆNH GIAO DỊCH:</b>\n"
         f"• Kiểm tra ví: <code>/sodu</code>\n"
-        f"• Nạp tiền: <code>/nap 50000</code>\n"
+        f"• Nạp tiền: <code>/nap</code>\n"
         f"• Rút tiền: <code>/rut 200000 [SốTK] [NgânHàng]</code>\n"
         f"• Nhập Code: <code>/code [MãCode]</code>"
     )
@@ -308,8 +391,7 @@ async def btn_game_list(message: types.Message):
 # --- CALLBACK QUERY HANDLER CHO DANH SÁCH GAME ---
 @dp.callback_query(F.data.startswith("game_"))
 async def process_game_callback(callback: types.CallbackQuery):
-    await callback.answer()  # Trả lời tức thì để nút dừng xoay
-    
+    await callback.answer()
     game_code = callback.data
     
     if game_code == "game_close":
@@ -397,7 +479,7 @@ async def process_game_callback(callback: types.CallbackQuery):
             "🖐️✌️👊 <b>GAME KÉO BÚA BAO</b>\n\n"
             "<b>Hướng dẫn chơi:</b>\n"
             "• Chọn ✌️(Kéo): Thắng 🖐️ - Thua 👊 - Hoà ✌️\n"
-            "• Chọn 👊(Búa): Thắng ✌️ - Thua 🖐️ - Hoà 👊\n"
+            "• Chọn 👊(Búa): Thắng ✌️ - Thua 🖐️ - Hoà 🖐️\n"
             "• Chọn 🖐️(Bao): Thắng 👊 - Thua ✌️ - Hoà 🖐️\n"
             "• <b>Tỉ lệ trả thưởng khi thắng:</b> x1,95 số tiền cược\n"
             "• <b>Hoà:</b> Hoàn lại 50% số tiền cược\n\n"
@@ -421,14 +503,33 @@ async def cmd_sodu(message: types.Message):
     user = get_user(message.from_user.id, message.from_user.full_name)
     await message.reply(f"💰 Số dư hiện tại của bạn: <b>{user['balance']:,.0f} VND</b>")
 
+# --- NẠP TIỀN XÁC NHẬN BỞI ADMIN ---
 @dp.message(Command("nap"))
 @dp.message(F.text == "💳 Nạp Tiền")
-async def cmd_nap(message: types.Message):
+async def cmd_nap(message: types.Message, state: FSMContext):
     args = message.text.split()
-    amount = 50000
     if len(args) > 1 and args[1].isdigit():
         amount = int(args[1])
+        await process_nap_amount(message, amount, state)
+    else:
+        await state.set_state(NapMoneyState.waiting_for_amount)
+        await message.reply("💵 Vui lòng nhập số tiền bạn muốn nạp (tối thiểu <b>10,000đ</b>):")
+
+@dp.message(NapMoneyState.waiting_for_amount)
+async def process_nap_input(message: types.Message, state: FSMContext):
+    if not message.text or not message.text.isdigit():
+        await message.reply("❌ Vui lòng chỉ nhập số nguyên hợp lệ! Ví dụ: 50000")
+        return
     
+    amount = int(message.text)
+    await process_nap_amount(message, amount, state)
+
+async def process_nap_amount(message: types.Message, amount: int, state: FSMContext):
+    if amount < 10000:
+        await message.reply("❌ Số tiền nạp tối thiểu là <b>10,000đ</b>! Vui lòng nhập lại số tiền hợp lệ:")
+        return
+
+    await state.clear()
     user_id = message.from_user.id
     name = message.from_user.full_name
     username = f"@{message.from_user.username}" if message.from_user.username else name
@@ -440,33 +541,17 @@ async def cmd_nap(message: types.Message):
         bonus_promo = amount * (promo_config["percent"] / 100.0)
         
     total_add = amount + bonus_promo
-    user["history_nap"].append(f"Nạp {amount:,.0f} VND (+KM: {bonus_promo:,.0f} VND) [{content_nap}]")
-    user["total_nap"] += amount
-    user["balance"] += total_add
 
-    ref_id = user.get("referrer_id")
-    if ref_id and ref_id in users_db:
-        ref_bonus = amount * 0.005
-        users_db[ref_id]["balance"] += ref_bonus
-        users_db[ref_id]["ref_commission"] = users_db[ref_id].get("ref_commission", 0.0) + ref_bonus
-        try:
-            await bot.send_message(
-                ref_id, 
-                f"🎉 Bạn nhận được <b>{ref_bonus:,.0f} VND</b> hoa hồng (0.5%) từ giao dịch nạp tiền của <b>{name}</b>!"
-            )
-        except Exception:
-            pass
-    
     qr_caption = (
-        f"💳 <b>HƯỚNG DẪN NẠP TIỀN TỰ ĐỘNG</b> 💳\n\n"
+        f"💳 <b>HƯỚNG DẪN NẠP TIỀN</b> 💳\n\n"
         f"📌 <b>BƯỚC 1:</b> Quét mã QR bên dưới hoặc chuyển khoản thủ công theo thông tin:\n"
         f"• Ngân hàng: <b>MB BANK</b>\n"
         f"• Số tài khoản: <code>2105200999999</code>\n"
         f"• Chủ tài khoản: <b>KHONG QUOC BAO</b>\n"
         f"• Số tiền: <b>{amount:,.0f} VND</b>\n"
         f"• Nội dung CK bắt buộc: <code>{content_nap}</code>\n\n"
-        f"📌 <b>BƯỚC 2:</b> Nhập đúng <b>Nội dung chuyển khoản</b> để tiền tự động cộng vào tài khoản trong 1-3 phút.\n"
-        f"⚠️ <i>Lưu ý: Chuyển sai nội dung vui lòng liên hệ Admin để hỗ trợ xử lý!</i>"
+        f"📌 <b>BƯỚC 2:</b> Sau khi chuyển khoản xong, vui lòng chờ Admin xác nhận. Tiền sẽ được cộng tự động ngay khi được duyệt.\n"
+        f"⚠️ <i>Lưu ý: Chuyển đúng nội dung để lệnh được duyệt nhanh nhất!</i>"
     )
     if bonus_promo > 0:
         qr_caption += f"\n\n🎁 <b>Khuyến mãi áp dụng:</b> +{promo_config['percent']}% ({bonus_promo:,.0f} VND) thành {total_add:,.0f} VND!"
@@ -478,18 +563,95 @@ async def cmd_nap(message: types.Message):
     except Exception:
         await message.answer(qr_caption)
 
+    # Gửi yêu cầu duyệt đến Admin
+    admin_kb = InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(text="✅ Đồng ý cộng tiền", callback_data=f"nap_approve_{user_id}_{amount}_{total_add}_{content_nap}"),
+            InlineKeyboardButton(text="❌ Từ chối", callback_data=f"nap_deny_{user_id}_{amount}")
+        ]
+    ])
+
     try:
         admin_notice = (
-            f"📥 <b>THÔNG BÁO NẠP TIỀN MỚI</b>\n\n"
+            f"📥 <b>YÊU CẦU NẠP TIỀN MỚI DẦN DỰYỆT</b>\n\n"
             f"👤 Khách hàng: <b>{name}</b> ({username})\n"
             f"🆔 ID: <code>{user_id}</code>\n"
-            f"💵 Số tiền: <b>{amount:,.0f} VND</b>\n"
-            f"🎁 Cộng Khuyến mãi: <b>{bonus_promo:,.0f} VND</b>\n"
-            f"📝 Nội dung: <code>{content_nap}</code>"
+            f"💵 Số tiền nạp: <b>{amount:,.0f} VND</b>\n"
+            f"🎁 Thực nhận (+KM): <b>{total_add:,.0f} VND</b>\n"
+            f"📝 Nội dung CK: <code>{content_nap}</code>"
         )
-        await bot.send_message(ADMIN_ID, admin_notice)
+        await bot.send_message(ADMIN_ID, admin_notice, reply_markup=admin_kb)
     except Exception as e:
-        logging.error(f"Không thể gửi thông báo cho Admin: {e}")
+        logging.error(f"Không thể gửi thông báo duyệt nạp cho Admin: {e}")
+
+@dp.callback_query(F.data.startswith("nap_"))
+async def process_nap_callback(callback: types.CallbackQuery):
+    if callback.from_user.id != ADMIN_ID:
+        await callback.answer("⚠️ Bạn không có quyền thực hiện hành động này!", show_alert=True)
+        return
+
+    data = callback.data.split("_")
+    action = data[1]
+    
+    if action == "approve":
+        target_id = int(data[2])
+        amount = float(data[3])
+        total_add = float(data[4])
+        content_nap = data[5]
+        
+        target_user = get_user(target_id)
+        target_user["history_nap"].append(f"Nạp {amount:,.0f} VND (+KM: {total_add - amount:,.0f} VND) [{content_nap}]")
+        target_user["total_nap"] += amount
+        target_user["balance"] += total_add
+
+        # Hoa hồng giới thiệu
+        ref_id = target_user.get("referrer_id")
+        if ref_id and ref_id in users_db:
+            ref_bonus = amount * 0.005
+            users_db[ref_id]["balance"] += ref_bonus
+            users_db[ref_id]["ref_commission"] = users_db[ref_id].get("ref_commission", 0.0) + ref_bonus
+            try:
+                await bot.send_message(
+                    ref_id, 
+                    f"🎉 Bạn nhận được <b>{ref_bonus:,.0f} VND</b> hoa hồng (0.5%) từ giao dịch nạp tiền của <b>{target_user['name']}</b>!"
+                )
+            except Exception:
+                pass
+
+        try:
+            await bot.send_message(
+                target_id,
+                f"✅ <b>LỆNH NẠP TIỀN ĐÃ ĐƯỢC DUYỆT!</b>\n\n"
+                f"💰 Số tiền cộng: <b>+{total_add:,.0f} VND</b>\n"
+                f"💳 Số dư hiện tại: <b>{target_user['balance']:,.0f} VND</b>\n"
+                f"🚀 Chúc bạn chơi game may mắn và đại thắng!"
+            )
+        except Exception:
+            pass
+
+        await callback.message.edit_text(
+            f"{callback.message.html_text}\n\n🟢 <b>ĐÃ ĐỒNG Ý DUYỆT CỘNG {total_add:,.0f} VND</b>"
+        )
+        await callback.answer("✅ Đã cộng tiền thành công!")
+
+    elif action == "deny":
+        target_id = int(data[2])
+        amount = float(data[3])
+        
+        try:
+            await bot.send_message(
+                target_id,
+                f"❌ <b>LỆNH NẠP TIỀN BỊ TỪ CHỐI!</b>\n\n"
+                f"Yêu cầu nạp <b>{amount:,.0f} VND</b> của bạn đã bị Admin từ chối.\n"
+                f"Vui lòng liên hệ CSKH nếu có thắc mắc!"
+            )
+        except Exception:
+            pass
+
+        await callback.message.edit_text(
+            f"{callback.message.html_text}\n\n🔴 <b>ĐÃ TỪ CHỐI YÊU CẦU NẠP TIỀN</b>"
+        )
+        await callback.answer("❌ Đã từ chối lệnh nạp!")
 
 @dp.message(Command("rut"))
 @dp.message(F.text == "💸 Rút Tiền")
