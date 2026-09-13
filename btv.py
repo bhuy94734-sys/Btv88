@@ -85,6 +85,7 @@ async def set_bot_commands(bot: Bot):
     except Exception as e:
         logging.error(f"Lỗi set commands: {e}")
 
+# --- BÀN PHÍM CHÍNH (REPLY KEYBOARD) ---
 main_menu_kb = ReplyKeyboardMarkup(
     keyboard=[
         [KeyboardButton(text="👤 Tài Khoản Của Tôi"), KeyboardButton(text="🎮 Danh Sách Game")],
@@ -96,12 +97,14 @@ main_menu_kb = ReplyKeyboardMarkup(
     resize_keyboard=True
 )
 
+# --- MENU INLINE DANH SÁCH GAME ---
 def get_game_list_inline_kb():
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="Tài Xỉu 🎲", callback_query_data="game_tx"), InlineKeyboardButton(text="Chẵn Lẻ ⚫️", callback_query_data="game_cl")],
-        [InlineKeyboardButton(text="Bỏng Ngô 🍿", callback_query_data="game_ngo"), InlineKeyboardButton(text="Bóng Rổ 🏀", callback_query_data="game_br")],
-        [InlineKeyboardButton(text="Bóng Đá ⚽️", callback_query_data="game_bd"), InlineKeyboardButton(text="Bowling 🎳", callback_query_data="game_bw")],
-        [InlineKeyboardButton(text="Phi Tiêu 🎯", callback_query_data="game_pt"), InlineKeyboardButton(text="Kéo Búa Bao 🖐️✌️👊", callback_query_data="game_kbb")]
+        [InlineKeyboardButton(text="Tài Xỉu 🎲", callback_data="game_tx"), InlineKeyboardButton(text="Chẵn Lẻ ⚫️", callback_data="game_cl")],
+        [InlineKeyboardButton(text="Bỏng Ngô 🍿", callback_data="game_ngo"), InlineKeyboardButton(text="Bóng Rổ 🏀", callback_data="game_br")],
+        [InlineKeyboardButton(text="Bóng Đá ⚽️", callback_data="game_bd"), InlineKeyboardButton(text="Bowling 🎳", callback_data="game_bw")],
+        [InlineKeyboardButton(text="Phi Tiêu 🎯", callback_data="game_pt"), InlineKeyboardButton(text="Kéo Búa Bao 🖐️✌️👊", callback_data="game_kbb")],
+        [InlineKeyboardButton(text="❌ Đóng Menu", callback_data="game_close")]
     ])
     return keyboard
 
@@ -296,23 +299,30 @@ async def btn_my_account(message: types.Message):
     )
     await message.answer(text)
 
+# --- XỬ LÝ NÚT DANH SÁCH GAME ---
 @dp.message(F.text == "🎮 Danh Sách Game")
 async def btn_game_list(message: types.Message):
-    text = "🎮 <b>DANH SÁCH GAME CÓ SẴN</b>\n\nBấm vào nút dưới đây để xem hướng dẫn chi tiết từng game:"
+    text = "🎮 <b>DANH SÁCH GAME CÓ SẴN BTV88 CLUB</b>\n\nBấm vào các nút bên dưới để xem hướng dẫn và cú pháp chơi từng game:"
     await message.answer(text, reply_markup=get_game_list_inline_kb())
 
-# --- XỬ LÝ SỰ KIỆN CALLBACK KHI BẤM NÚT DANH SÁCH GAME (ĐÃ SỬA LỖI NÚT KHÔNG PHẢN HỒI) ---
+# --- CALLBACK QUERY HANDLER CHO DANH SÁCH GAME ---
 @dp.callback_query(F.data.startswith("game_"))
 async def process_game_callback(callback: types.CallbackQuery):
-    # Trả lời Callback ngay lập tức để tránh nốt bấm bị xoay tròn / timeout
-    await callback.answer()
+    await callback.answer()  # Trả lời tức thì để nút dừng xoay
     
     game_code = callback.data
     
+    if game_code == "game_close":
+        try:
+            await callback.message.delete()
+        except Exception:
+            pass
+        return
+
     if game_code == "game_tx":
         text = (
             "🎲 <b>GAME TÀI XỈU 3D</b>\n\n"
-            "📌 <b>Hướng dẫn chơi:</b> Tham gia vào nhóm chát để đặt cược cùng mọi người.\n"
+            "📌 <b>Hướng dẫn chơi:</b> Tham gia vào nhóm chat để đặt cược cùng mọi người.\n"
             "• Đặt Tài: <code>/Tai [số tiền]</code>\n"
             "• Đặt Xỉu: <code>/Xiu [số tiền]</code>\n\n"
             "👉 <b>Link Room tung xúc xắc:</b> https://t.me/btv88kiemtien"
@@ -320,7 +330,7 @@ async def process_game_callback(callback: types.CallbackQuery):
     elif game_code == "game_cl":
         text = (
             "⚫️ <b>GAME CHĂN LẺ</b>\n\n"
-            "📌 <b>Hướng dẫn chơi:</b> Tham gia vào nhóm chát để đặt cược cùng mọi người.\n"
+            "📌 <b>Hướng dẫn chơi:</b> Tham gia vào nhóm chat để đặt cược cùng mọi người.\n"
             "• Đặt Chẵn: <code>/C [số tiền]</code>\n"
             "• Đặt Lẻ: <code>/L [số tiền]</code>\n\n"
             "👉 <b>Link Room tung chẵn lẻ:</b> https://t.me/btv88kiemtien"
