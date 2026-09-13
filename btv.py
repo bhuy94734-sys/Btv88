@@ -30,7 +30,7 @@ dp = Dispatcher(storage=storage)
 
 # --- BIẾN TRẠNG THÁI TRÒ CHƠI ---
 current_session = 105027
-current_jackpot = 600000.0
+current_jackpot = 300000.0
 recent_tai_xiu = ['T', 'X', 'T', 'X', 'T', 'X', 'T', 'X', 'T', 'X', 'T', 'X']
 recent_chan_le = ['C', 'L', 'C', 'L', 'C', 'L', 'C', 'L', 'C', 'L', 'C', 'L']
 game_running = True
@@ -603,8 +603,8 @@ async def main():
     await set_bot_commands(bot)
     
     app = web.Application()
+    # add_get đã tự động đăng ký cả phương thức GET và HEAD
     app.router.add_get("/", handle_ping)
-    app.router.add_head("/", handle_ping)
     
     runner = web.AppRunner(app)
     await runner.setup()
@@ -615,7 +615,6 @@ async def main():
     asyncio.create_task(game_loop())
     asyncio.create_task(auto_code_loop())
     
-    # Đóng session an toàn khi ngắt kết nối để khắc phục lỗi Render
     try:
         await dp.start_polling(bot)
     finally:
