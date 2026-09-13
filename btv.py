@@ -5,6 +5,7 @@ import random
 from aiohttp import web
 from aiogram import Bot, Dispatcher, F, types
 from aiogram.enums import ParseMode
+from aiogram.client.default import DefaultBotProperties
 from aiogram.filters import Command
 from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.types import (
@@ -23,7 +24,7 @@ ADMIN_ID = int(os.getenv("ADMIN_ID", "8985238179"))
 GROUP_CHAT_ID = int(os.getenv("GROUP_CHAT_ID", "-5553483080"))
 
 logging.basicConfig(level=logging.INFO)
-bot = Bot(token=TOKEN, parse_mode=ParseMode.HTML)
+bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
 storage = MemoryStorage()
 dp = Dispatcher(storage=storage)
 
