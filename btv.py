@@ -17,7 +17,7 @@ from aiogram.types import (
 from aiohttp import web
 
 # --- CẤU HÌNH CƠ BẢN ---
-TOKEN = "DIEN_TOKEN_CHUAN_VAO_DAY"  # Dán Token chuẩn từ BotFather vào đây
+TOKEN = "8954729214:AAF1Bwsm9CGJbBY7AX4C-T8j7ra9q18AMTc"  # Dán Token chuẩn từ BotFather vào đây
 ADMIN_ID = 8985238179
 GROUP_CHAT_ID = None 
 
