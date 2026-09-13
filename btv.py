@@ -2,10 +2,9 @@ import asyncio
 import logging
 import os
 import random
-from aiohttp import web
 from aiogram import Bot, Dispatcher, F, types
-from aiogram.enums import ParseMode
 from aiogram.client.default import DefaultBotProperties
+from aiogram.enums import ParseMode
 from aiogram.filters import Command
 from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.types import (
@@ -17,554 +16,547 @@ from aiogram.types import (
     BotCommandScopeDefault,
     ChatPermissions,
 )
+import aiohttp
+from aiohttp import web
 
-# Lấy Token và Admin ID từ biến môi trường trên Render hoặc điền trực tiếp
-TOKEN = os.getenv("BOT_TOKEN", "8954729214:AAGM9__IwcWXqw0duQ5gPXLv-H6BvEsal0g")
+# --- CẤU HÌNH CƠ BẢN ---
+TOKEN = os.getenv("BOT_TOKEN", "8954729214:AAH...your_token...")
 ADMIN_ID = int(os.getenv("ADMIN_ID", "8985238179"))
-GROUP_CHAT_ID = int(os.getenv("GROUP_CHAT_ID", "-5553483080"))
+GROUP_CHAT_ID = int(os.getenv("GROUP_CHAT_ID", "-100...your_group_id..."))
 
 logging.basicConfig(level=logging.INFO)
 bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
 storage = MemoryStorage()
 dp = Dispatcher(storage=storage)
 
-# Biến trạng thái trò chơi và tài chính
-current_session = 105020
-current_jackpot = 300000.0  # Hũ mặc định khởi tạo là 300,000đ
-recent_tai_xiu = []
-recent_chan_le = []
-game_running = True  # Trạng thái vòng lặp tung xúc xắc (bật/tắt)
+# --- BIẾN TRẠNG THÁI TRÒ CHƠI ---
+current_session = 105025
+current_jackpot = 350000.0
+recent_tai_xiu = ['T', 'X', 'T', 'X', 'T', 'X', 'T', 'X', 'T', 'X', 'T', 'X']
+recent_chan_le = ['C', 'L', 'C', 'L', 'C', 'L', 'C', 'L', 'C', 'L', 'C', 'L']
+game_running = True
 
-# Giả lập cơ sở dữ liệu người chơi: {user_id: {"balance": float, "username": str}}
-players_in_session = {}
+# Cơ sở dữ liệu giả lập trong RAM
+users_db = {
+    ADMIN_ID: {"balance": 10000000.0, "name": "Admin Tổng"}
+}
+bets_current = {} # {user_id: {"type": "tai/xiu/chan/le", "amount": 10000, "name": "..."}}
+active_codes = {} # {"CODE123": {"amount": 50000, "uses": 5}}
 
-# Lưu trữ cược trong phiên hiện tại: {user_id: {"choice": str, "amount": float}}
-current_bets = {}
+def get_user(user_id: int, name: str = "Thành viên"):
+    if user_id not in users_db:
+        users_db[user_id] = {"balance": 50000.0, "name": name} # Tặng vốn khởi nghiệp 50k
+    return users_db[user_id]
 
+# --- THIẾT LẬP MENU LỆNH CHO BOT ---
+async def set_bot_commands(bot: Bot):
+    commands = [
+        BotCommand(command="start", description="Mở menu chính / Hướng dẫn"),
+        BotCommand(command="sodu", description="Kiểm tra số dư ví"),
+        BotCommand(command="nap", description="Nạp tiền tự động / QR Code"),
+        BotCommand(command="rut", description="Tạo lệnh rút tiền"),
+        BotCommand(command="code", description="Nhập Giftcode nhận thưởng"),
+    ]
+    await bot.set_my_commands(commands, scope=BotCommandScopeDefault())
+    
+    # Lệnh riêng cho Admin hiển thị trong private chat với bot nếu là admin
+    admin_commands = commands + [
+        BotCommand(command="cong", description="[Admin] Cộng tiền: /cong số_tiền id"),
+        BotCommand(command="tru", description="[Admin] Trừ tiền: /tru số_tiền id"),
+        BotCommand(command="taocode", description="[Admin] Tạo mã: /taocode code tiền lượt"),
+        BotCommand(command="thongbao", description="[Admin] Gửi thông báo toàn server"),
+    ]
+    try:
+        await bot.set_my_commands(admin_commands, scope=types.BotCommandScopeChat(chat_id=ADMIN_ID))
+    except Exception:
+        pass
 
-def get_dice_emoji(val: int) -> str:
-  return ["⚀", "⚁", "⚂", "⚃", "⚄", "⚅"][val - 1]
-
-
-def build_statistics_string():
-  tx_str = "".join(["🔴" if x == "T" else "🔵" for x in recent_tai_xiu])
-  cl_str = "".join(["⚫️" if x == "C" else "⚪️" for x in recent_chan_le])
-  return f"""🚥 <b>THỐNG KÊ 12 PHIÊN GẦN NHẤT</b>
-KẾT QUẢ 12 PHIÊN GẦN NHẤT TÀI XỈU: 
-{tx_str if tx_str else "Chưa có dữ liệu"}
-
-KẾT QUẢ 12 PHIÊN GẦN NHẤT CHẴN LẺ:
-{cl_str if cl_str else "Chưa có dữ liệu"}"""
-
-
-def build_main_keyboard():
-  return InlineKeyboardMarkup(
-      inline_keyboard=[
-          [
-              InlineKeyboardButton(text="Tài 🔴", callback_data="bet_T"),
-              InlineKeyboardButton(text="Xỉu 🔵", callback_data="bet_X"),
-          ],
-          [
-              InlineKeyboardButton(text="Chẵn ⚫️", callback_data="bet_C"),
-              InlineKeyboardButton(text="Lẻ ⚪️", callback_data="bet_L"),
-          ],
-          [
-              InlineKeyboardButton(text="💰 Số Dư", callback_data="btn_sodu"),
-              InlineKeyboardButton(text="💵 Nạp Tiền", callback_data="btn_nap_tien"),
-          ],
-      ]
-  )
-
-
-def get_reply_menu(is_admin: bool = False):
-  keyboard = [
-      [KeyboardButton(text="🕹️ Danh sách game"), KeyboardButton(text="💳 Tài Khoản")],
-      [KeyboardButton(text="💵 Nạp Tiền"), KeyboardButton(text="₿ Rút Tiền")],
-      [KeyboardButton(text="🌸 Giới Thiệu"), KeyboardButton(text="🥕 Đua top")],
-      [KeyboardButton(text="🧧 Event"), KeyboardButton(text="🔍 Lệnh")],
-  ]
-  if is_admin:
-    keyboard.append([KeyboardButton(text="⚡ MENU ADMIN")])
-  return ReplyKeyboardMarkup(
-      keyboard=keyboard,
-      resize_keyboard=True,
-      is_persistent=True,
-  )
-
-
-async def set_bot_commands_and_menu():
-  commands = [
-      BotCommand(command="start", description="Bắt đầu / Mở Menu chính"),
-      BotCommand(command="sodu", description="Kiểm tra số dư tài khoản"),
-      BotCommand(command="nap", description="Nạp tiền vào tài khoản"),
-  ]
-  await bot.set_my_commands(commands, scope=BotCommandScopeDefault())
-
-
-# Hàm tính tổng tiền cược mỗi bên trong phiên hiện tại
-def get_total_bets_by_choice():
-  totals = {"T": 0.0, "X": 0.0, "C": 0.0, "L": 0.0}
-  for bet_info in current_bets.values():
-    choice = bet_info["choice"]
-    amount = bet_info["amount"]
-    if choice in totals:
-      totals[choice] += amount
-  return totals
-
-
-async def run_game_loop():
-  global current_session, current_jackpot, recent_tai_xiu, recent_chan_le, game_running, current_bets
-  await asyncio.sleep(5)
-  while True:
-    if game_running:
-      # 1. BẮT ĐẦU PHIÊN MỚI: Mở khóa chat cho thành viên
-      current_bets = {}  # Reset cược cho phiên mới
-      try:
+# --- HÀM KHÓA / MỞ KHÓA CHAT NHÓM ---
+async def lock_chat(chat_id: int):
+    try:
         await bot.set_chat_permissions(
-            chat_id=GROUP_CHAT_ID,
+            chat_id=chat_id,
+            permissions=ChatPermissions(
+                can_send_messages=False,
+                can_send_polls=False,
+                can_send_other_messages=False,
+                can_add_web_page_previews=False
+            )
+        )
+    except Exception as e:
+        logging.error(f"Lỗi khóa chat: {e}")
+
+async def unlock_chat(chat_id: int):
+    try:
+        await bot.set_chat_permissions(
+            chat_id=chat_id,
             permissions=ChatPermissions(
                 can_send_messages=True,
-                can_send_audios=True,
-                can_send_documents=True,
-                can_send_photos=True,
-                can_send_videos=True,
-                can_send_video_notes=True,
-                can_send_voice_notes=True,
+                can_send_media_messages=True,
                 can_send_polls=True,
                 can_send_other_messages=True,
                 can_add_web_page_previews=True,
-            ),
+                can_invite_users=True
+            )
         )
-      except Exception as e:
+    except Exception as e:
         logging.error(f"Lỗi mở khóa chat: {e}")
 
-      # Gửi tin nhắn thông báo bắt đầu phiên mới
-      start_msg = await bot.send_message(
-          chat_id=GROUP_CHAT_ID,
-          text=(
-              f"🔔 <b>PHIÊN #{current_session} ĐÃ BẮT ĐẦU!</b>\n🎲 Mời anh em"
-              " nhanh tay chọn cửa bên dưới. Cửa chat đã được <b>MỞ</b>!"
-          ),
-          reply_markup=build_main_keyboard(),
-          parse_mode=ParseMode.HTML,
-      )
-
-      # 2. VÒNG LẶP ĐẾM NGƯỢC 30 GIÂY (Cứ mỗi 5 giây cập nhật thống kê cược)
-      for remaining in range(30, 0, -5):
-        if not game_running:
-          break
-        totals = get_total_bets_by_choice()
-        countdown_text = f"""🎲 <b>PHIÊN #{current_session} ĐANG DIỄN RA</b>
-⏳ Thời gian đếm ngược: <b>{remaining} giây</b>
-
-📊 <b>TỔNG TIỀN CƯỢC TẠM TÍNH:</b>
-- 🔴 <b>Tài:</b> {totals['T']:,.0f} VNĐ
-- 🔵 <b>Xỉu:</b> {totals['X']:,.0f} VNĐ
-- ⚫️ <b>Chẵn:</b> {totals['C']:,.0f} VNĐ
-- ⚪️ <b>Lẻ:</b> {totals['L']:,.0f} VNĐ
-
-💰 <b>HŨ HIỆN TẠI:</b> <code>{current_jackpot:,.0f} VNĐ</code>"""
-
-        try:
-          await bot.edit_message_text(
-              chat_id=GROUP_CHAT_ID,
-              message_id=start_msg.message_id,
-              text=countdown_text,
-              reply_markup=build_main_keyboard(),
-              parse_mode=ParseMode.HTML,
-          )
-        except Exception:
-          pass  # Tránh lỗi nếu nội dung không thay đổi hoặc message bị lỗi
-
-        await asyncio.sleep(5)
-
-      # 3. KẾT THÚC PHIÊN: Khóa chat ngay lập tức để quay số
-      try:
-        await bot.set_chat_permissions(
-            chat_id=GROUP_CHAT_ID,
-            permissions=ChatPermissions(can_send_messages=False),
-        )
-      except Exception as e:
-        logging.error(f"Lỗi khóa chat: {e}")
-
-      # 4. TUNG XÚC XẮC & KẾT QUẢ
-      d1 = random.randint(1, 6)
-      d2 = random.randint(1, 6)
-      d3 = random.randint(1, 6)
-      total = d1 + d2 + d3
-
-      if total <= 10:
-        tx_result = "Xỉu"
-        tx_code = "X"
-      else:
-        tx_result = "Tài"
-        tx_code = "T"
-
-      cl_result = "Chẵn" if total % 2 == 0 else "Lẻ"
-      cl_code = "C" if total % 2 == 0 else "L"
-
-      recent_tai_xiu.append(tx_code)
-      if len(recent_tai_xiu) > 12:
-        recent_tai_xiu.pop(0)
-
-      recent_chan_le.append(cl_code)
-      if len(recent_chan_le) > 12:
-        recent_chan_le.pop(0)
-
-      # Xử lý trả thưởng tự động
-      total_win_amount = 0
-      total_lose_amount = 0
-
-      for uid, bet_info in current_bets.items():
-        choice = bet_info["choice"]
-        amount = bet_info["amount"]
-        is_win = False
-
-        if choice in ["T", "X"] and choice == tx_code:
-          is_win = True
-        elif choice in ["C", "L"] and choice == cl_code:
-          is_win = True
-
-        if uid in players_in_session:
-          if is_win:
-            win_payout = amount * 1.95
-            players_in_session[uid]["balance"] += win_payout
-            total_win_amount += win_payout
-          else:
-            total_lose_amount += amount
-
-      tong_thang = total_win_amount if total_win_amount > 0 else random.randint(500000, 3000000)
-      tong_thua = total_lose_amount if total_lose_amount > 0 else random.randint(500000, 3000000)
-      cong_hu = tong_thua * 0.005
-      current_jackpot += cong_hu
-
-      result_text = f"""🔒 <b>KẾT QUẢ PHIÊN (#{current_session}) - ĐÃ KHÓA CHAT</b>
-
-_____________________
-|   {get_dice_emoji(d1)} {get_dice_emoji(d2)} {get_dice_emoji(d3)} ➡️ {total} điểm → {tx_result} | {cl_result}
-|  
-|  TỔNG ĐIỂM XÚC XẮC: {total}  
-|  
-|  TỔNG THẮNG: {tong_thang:,.0f} VND
-|  TỔNG THUA: {tong_thua:,.0f} VND
-|  CỘNG HŨ: {cong_hu:,.0f} VND  
-|  HŨ HIỆN TẠI: {current_jackpot:,.0f} VND
-|_____________________
-
-{build_statistics_string()}"""
-
-      try:
-        await bot.edit_message_text(
-            chat_id=GROUP_CHAT_ID,
-            message_id=start_msg.message_id,
-            text=result_text,
-            reply_markup=None,  # Gỡ bàn phím cược khi đã có kết quả
-            parse_mode=ParseMode.HTML,
-        )
-      except Exception as e:
-        logging.error(f"Lỗi gửi kết quả game: {e}")
-
-      current_session += 1
-    await asyncio.sleep(2)
-
-
-# ==================== XỬ LÝ CÁC NÚT REPLY DƯỚI THANH CHAT ====================
-
-@dp.message(F.text == "🕹️ Danh sách game")
-async def menu_danh_sach_game(message: types.Message):
-  guide_text = """🎮 <b>HƯỚNG DẪN CHƠI XÚC XẮC TỰ ĐỘNG CHO NGƯỜI MỚI</b>
-
-1. <b>Nạp tiền:</b> Nhấn vào nút <b>Nạp Tiền</b> hoặc chọn menu nạp tiền nhanh để lấy mã QR chuyển khoản tự động.
-2. <b>Đặt cược:</b> Khi phiên mới bắt đầu, bảng nút chọn <b>Tài / Xỉu / Chẵn / Lẻ</b> sẽ hiện lên ở nhóm chat. Bấm vào nút tương ứng để đặt cược.
-3. <b>Quy tắc tính điểm:</b>
-   - Tổng 3 hột xúc xắc từ <b>3 đến 10 điểm</b>: Cửa <b>Xỉu</b> thắng.
-   - Tổng từ <b>11 đến 18 điểm</b>: Cửa <b>Tài</b> thắng.
-   - Tổng điểm chia hết cho 2: Cửa <b>Chẵn</b> thắng, ngược lại là <b>Lẻ</b>.
-4. <b>Trả thưởng:</b> Hệ thống tự động trả thưởng tỷ lệ 1 ăn 0.95 vào số dư tài khoản của bạn ngay khi có kết quả."""
-  await message.answer(guide_text, parse_mode=ParseMode.HTML)
-
-
-@dp.message(F.text == "💳 Tài Khoản")
-async def menu_tai_khoan(message: types.Message):
-  user_id = message.from_user.id
-  balance = players_in_session.get(user_id, {}).get("balance", 0.0)
-  username = message.from_user.full_name
-  await message.answer(f"👤 <b>THÔNG TIN TÀI KHOẢN</b>\n\n- Khách hàng: <b>{username}</b>\n- ID: <code>{user_id}</code>\n- Số dư khả dụng: <b>{balance:,.0f} VNĐ</b>", parse_mode=ParseMode.HTML)
-
-
-@dp.message(F.text == "💵 Nạp Tiền")
-async def menu_nap_tien(message: types.Message):
-  amounts = [20000, 50000, 100000, 200000, 500000, 1000000, 2000000, 5000000]
-  keyboard_buttons = [
-      [InlineKeyboardButton(text=f"💵 {amt:,.0f} VNĐ", callback_data=f"deposit_amt_{amt}")]
-      for amt in amounts
-  ]
-  keyboard = InlineKeyboardMarkup(inline_keyboard=keyboard_buttons)
-  await message.answer("📋 <b>HƯỚNG DẪN NẠP TIỀN</b>\nChọn nhanh mệnh giá bạn muốn nạp bên dưới:", reply_markup=keyboard, parse_mode=ParseMode.HTML)
-
-
-@dp.message(F.text == "₿ Rút Tiền")
-async def menu_rut_tien(message: types.Message):
-  await message.answer("🏦 <b>HƯỚNG DẪN RÚT TIỀN</b>\nVui lòng liên hệ Admin hoặc sử dụng cú pháp: <code>/rut [Số tiền] [Số TK] [Ngân hàng]</code> để tạo lệnh rút.", parse_mode=ParseMode.HTML)
-
-
-@dp.message(F.text == "🌸 Giới Thiệu")
-async def menu_gioi_thieu(message: types.Message):
-  await message.answer("🌸 <b>HỆ THỐNG GIỚI THIỆU BẠN BÈ</b>\n\nChia sẻ link bot của bạn cho bạn bè để nhận hoa hồng hấp dẫn từ hệ thống!", parse_mode=ParseMode.HTML)
-
-
-@dp.message(F.text == "🥕 Đua top")
-async def menu_dua_top(message: types.Message):
-  await message.answer("🥕 <b>BẢNG XẾP HẠNG ĐUA TOP TUẦN</b>\n\nĐang cập nhật danh sách các cao thủ đứng đầu tuần này...", parse_mode=ParseMode.HTML)
-
-
-@dp.message(F.text == "🧧 Event")
-async def menu_event(message: types.Message):
-  await message.answer("🧧 <b>SỰ KIỆN & CODE TẶNG THƯỞNG</b>\n\nTheo dõi nhóm chat để nhận các mã Giftcode miễn phí mỗi ngày!", parse_mode=ParseMode.HTML)
-
-
-@dp.message(F.text == "🔍 Lệnh")
-async def menu_lenh(message: types.Message):
-  await message.answer("🔍 <b>DANH SÁCH LỆNH HỖ TRỢ</b>\n- /start : Mở giao diện menu chính\n- /sodu : Kiểm tra số dư\n- /nap : Hướng dẫn nạp tiền", parse_mode=ParseMode.HTML)
-
-
-@dp.message(F.text == "⚡ MENU ADMIN")
-async def menu_admin_panel(message: types.Message):
-  if message.from_user.id != ADMIN_ID:
-    await message.answer("Bạn không có quyền sử dụng menu này!")
-    return
-  admin_guide = """⚡ <b>BẢNG ĐIỀU KHIỂN ADMIN</b>
-- /stop : Bật/Tắt vòng lặp xúc xắc
-- /resethu : Đưa hũ về mặc định (300,000đ)
-- /conghu [số_tiền] : Cộng tiền vào hũ
-- /checkplayer : Xem danh sách người chơi & số dư"""
-  await message.answer(admin_guide, parse_mode=ParseMode.HTML)
-
-
-# ==================== XỬ LÝ ĐẶT CƯỢC & NẠP TIỀN QUA CALLBACK ====================
-
-@dp.callback_query(F.data.startswith("bet_"))
-async def callback_place_bet(callback: types.CallbackQuery):
-  choice = callback.data.split("_")[1]
-  user_id = callback.from_user.id
-
-  if user_id not in players_in_session or players_in_session[user_id]["balance"] <= 0:
-    await callback.answer("⚠️ Bạn chưa có số dư hoặc số dư bằng 0. Vui lòng nạp tiền để chơi!", show_alert=True)
-    return
-
-  bet_amount = 10000  # Cược nhanh mặc định mỗi lần bấm là 10,000đ
-  if players_in_session[user_id]["balance"] < bet_amount:
-    await callback.answer("⚠️ Số dư của bạn không đủ để đặt cược mức này!", show_alert=True)
-    return
-
-  players_in_session[user_id]["balance"] -= bet_amount
-  current_bets[user_id] = {"choice": choice, "amount": bet_amount}
-
-  choice_name = {"T": "Tài 🔴", "X": "Xỉu 🔵", "C": "Chẵn ⚫️", "L": "Lẻ ⚪️"}.get(choice, choice)
-  await callback.answer(f"✅ Đã đặt cược {bet_amount:,.0f} VNĐ vào cửa {choice_name} cho phiên #{current_session}!", show_alert=True)
-
-
-@dp.callback_query(F.data == "btn_sodu")
-async def callback_check_balance(callback: types.CallbackQuery):
-  user_id = callback.from_user.id
-  balance = players_in_session.get(user_id, {}).get("balance", 0.0)
-  await callback.answer(f"💰 Số dư hiện tại của bạn: {balance:,.0f} VNĐ", show_alert=True)
-
-
-@dp.callback_query(F.data == "btn_nap_tien")
-async def callback_nap_tien_inline(callback: types.CallbackQuery):
-  amounts = [20000, 50000, 100000, 200000, 500000, 1000000, 2000000, 5000000]
-  keyboard_buttons = [
-      [InlineKeyboardButton(text=f"💵 {amt:,.0f} VNĐ", callback_data=f"deposit_amt_{amt}")]
-      for amt in amounts
-  ]
-  keyboard = InlineKeyboardMarkup(inline_keyboard=keyboard_buttons)
-  instruction = "📋 <b>HƯỚNG DẪN NẠP TIỀN NHANH</b>\nVui lòng chọn số tiền cần nạp bên dưới:"
-  await callback.message.edit_text(instruction, reply_markup=keyboard, parse_mode=ParseMode.HTML)
-  await callback.answer()
-
-
-@dp.callback_query(F.data.startswith("deposit_amt_"))
-async def process_deposit_amount(callback: types.CallbackQuery):
-  amount = int(callback.data.split("_")[2])
-  user_id = callback.from_user.id
-  username = callback.from_user.username or callback.from_user.full_name
-  random_content = f"NAP{user_id}{random.randint(100, 999)}"
-
-  if user_id not in players_in_session:
-    players_in_session[user_id] = {"balance": 0.0, "username": username}
-
-  bank_bin = "970422"
-  account_no = "2105200999999"
-  template = "compact2"
-  qr_url = f"https://img.vietqr.io/image/{bank_bin}-{account_no}-{template}.jpg?amount={amount}&addInfo={random_content}&accountName=KHONG%20QUOC%20BAO"
-
-  caption = f"""🏦 <b>MÃ QR CHUYỂN KHOẢN TỰ ĐỘNG</b>
-
-Ngân hàng: <b>MB BANK</b>
-Số tài khoản: <code>{account_no}</code>
-Chủ tài khoản: <b>KHONG QUOC BAO</b>
-Số tiền: <b>{amount:,.0f} VNĐ</b>
-Nội dung chuyển khoản: <code>{random_content}</code>
-
-⚠️ <i>Vui lòng dùng app ngân hàng quét mã QR hoặc chuyển đúng nội dung để hệ thống tự động duyệt!</i>"""
-
-  try:
-    await callback.message.answer_photo(photo=qr_url, caption=caption, parse_mode=ParseMode.HTML)
-  except Exception:
-    await callback.message.answer(caption, parse_mode=ParseMode.HTML)
-
-  admin_msg = f"""🔔 <b>CÓ YÊU CẦU NẠP TIỀN MỚI!</b>
-👤 Khách: @{username} (ID: <code>{user_id}</code>)
-💰 Số tiền: <b>{amount:,.0f} VNĐ</b>
-📝 Nội dung: <code>{random_content}</code>"""
-
-  admin_kb = InlineKeyboardMarkup(
-      inline_keyboard=[
-          [
-              InlineKeyboardButton(text="✅ Duyệt", callback_data=f"approve_{user_id}_{amount}"),
-              InlineKeyboardButton(text="❌ Từ chối", callback_data=f"reject_{user_id}_{amount}"),
-          ]
-      ]
-  )
-  try:
-    await bot.send_message(chat_id=ADMIN_ID, text=admin_msg, reply_markup=admin_kb, parse_mode=ParseMode.HTML)
-  except Exception as e:
-    logging.error(f"Lỗi gửi thông báo cho admin: {e}")
-
-  await callback.answer("Đã tạo mã QR nạp tiền thành công!")
-
-
-@dp.callback_query(F.data.startswith("approve_") | F.data.startswith("reject_"))
-async def admin_handle_deposit(callback: types.CallbackQuery):
-  if callback.from_user.id != ADMIN_ID:
-    await callback.answer("Bạn không có quyền thao tác!", show_alert=True)
-    return
-
-  parts = callback.data.split("_")
-  action = parts[0]
-  user_id = int(parts[1])
-  amount = float(parts[2])
-
-  if action == "approve":
-    if user_id in players_in_session:
-      players_in_session[user_id]["balance"] += amount
-    else:
-      players_in_session[user_id] = {"balance": amount, "username": str(user_id)}
-
-    current_balance = players_in_session[user_id]["balance"]
-    await bot.send_message(
-        chat_id=user_id,
-        text=f"✅ Giao dịch nạp tiền <b>{amount:,.0f} VNĐ</b> đã được duyệt!\nSố dư hiện tại: <b>{current_balance:,.0f} VNĐ</b>",
-        parse_mode=ParseMode.HTML,
-    )
-    await callback.message.edit_caption(
-        caption=callback.message.caption + f"\n\n<b>✅ ĐÃ DUYỆT cho user {user_id}</b>",
-        parse_mode=ParseMode.HTML,
-    )
-  else:
-    await bot.send_message(
-        chat_id=user_id,
-        text=f"❌ Giao dịch nạp tiền <b>{amount:,.0f} VNĐ</b> đã bị từ chối.",
-        parse_mode=ParseMode.HTML,
-    )
-    await callback.message.edit_caption(
-        caption=callback.message.caption + f"\n\n<b>❌ ĐÃ TỪ CHỐI đơn của user {user_id}</b>",
-        parse_mode=ParseMode.HTML,
-    )
-  await callback.answer("Đã xử lý.")
-
-
-# ==================== CÁC LỆNH ADMIN QUẢN LÝ ====================
-
-@dp.message(Command("stop"))
-async def admin_stop_game(message: types.Message):
-  global game_running
-  if message.from_user.id != ADMIN_ID:
-    await message.answer("Bạn không có quyền sử dụng lệnh này!")
-    return
-  game_running = not game_running
-  status_text = "tiếp tục chạy" if game_running else "đã dừng lại"
-  await message.answer(f"🛑 Bot đã chuyển trạng thái tung xúc xắc thành: <b>{status_text}</b>", parse_mode=ParseMode.HTML)
-
-
-@dp.message(Command("resethu"))
-async def admin_reset_hu(message: types.Message):
-  global current_jackpot
-  if message.from_user.id != ADMIN_ID:
-    await message.answer("You are not admin!")
-    return
-  current_jackpot = 300000.0
-  await message.answer("🔄 Đã reset hũ về mức mặc định: <b>300,000 VNĐ</b>", parse_mode=ParseMode.HTML)
-
-
-@dp.message(Command("conghu"))
-async def admin_cong_hu(message: types.Message):
-  global current_jackpot
-  if message.from_user.id != ADMIN_ID:
-    await message.answer("Bạn không có quyền sử dụng lệnh này!")
-    return
-  args = message.text.split()
-  if len(args) < 2:
-    await message.answer("⚠️ Vui lòng nhập số tiền cần cộng thêm vào hũ. Ví dụ: <code>/conghu 50000</code>", parse_mode=ParseMode.HTML)
-    return
-  try:
-    amount = float(args[1])
-    current_jackpot += amount
-    await message.answer(f"➕ Đã cộng thêm <b>{amount:,.0f} VNĐ</b> vào hũ.\n💰 Hũ hiện tại: <b>{current_jackpot:,.0f} VNĐ</b>", parse_mode=ParseMode.HTML)
-  except ValueError:
-    await message.answer("⚠️ Số tiền không hợp lệ!")
-
-
-@dp.message(Command("checkplayer"))
-async def admin_check_player(message: types.Message):
-  if message.from_user.id != ADMIN_ID:
-    await message.answer("Bạn không có quyền sử dụng lệnh này!")
-    return
-  if not players_in_session:
-    await message.answer("👥 Hiện tại chưa có người chơi nào ghi nhận trong phiên.")
-    return
-  player_list_str = f"👥 <b>DANH SÁCH NGƯỜI CHƠI ({len(players_in_session)})</b>:\n\n"
-  for uid, info in players_in_session.items():
-    player_list_str += f"👤 @{info['username']} (ID: <code>{uid}</code>)\n💰 Số dư: <b>{info['balance']:,.0f} VNĐ</b>\n------------------\n"
-  await message.answer(player_list_str, parse_mode=ParseMode.HTML)
-
+# --- CÁC LỆNH NGƯỜI DÙNG ---
 
 @dp.message(Command("start"))
 async def cmd_start(message: types.Message):
-  is_admin = (message.from_user.id == ADMIN_ID)
-  welcome_text = f"""🎲 <b>HỆ THỐNG XÚC XẮC TỰ ĐỘNG</b>
+    get_user(message.from_user.id, message.from_user.full_name)
+    text = (
+        f"💎 <b>BTV88 CLUB - CỔNG GAME TÀI XỈU UY TÍN</b> 💎\n\n"
+        f"Chào mừng <b>{message.from_user.full_name}</b> đến với hệ thống tự động!\n\n"
+        f"📜 <b>HƯỚNG DẪN CƯỢC NHANH TRONG NHÓM:</b>\n"
+        f"• Đặt Tài: <code>/Tai 10000</code> hoặc <code>/tai 10000</code>\n"
+        f"• Đặt Xỉu: <code>/Xiu 10000</code> hoặc <code>/xiu 10000</code>\n"
+        f"• Đặt Chẵn: <code>/C 10000</code> hoặc <code>/chan 10000</code>\n"
+        f"• Đặt Lẻ: <code>/L 10000</code> hoặc <code>/le 10000</code>\n\n"
+        f"💳 <b>LỆNH GIAO DỊCH:</b>\n"
+        f"• Kiểm tra ví: <code>/sodu</code>\n"
+        f"• Nạp tiền: <code>/nap 50000</code>\n"
+        f"• Rút tiền: <code>/rut 200000 [SốTK] [NgânHàng]</code>\n"
+        f"• Nhập Code: <code>/code [MãCode]</code>"
+    )
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="🎮 Vào Nhóm Chơi Game", url="https://t.me/+YourGroupInviteLink")]
+    ])
+    await message.answer(text, reply_markup=kb)
 
-Chào mừng bạn đến với hệ thống game tự động phiên #{current_session}.
-Sử dụng các nút menu phía dưới màn hình để trải nghiệm các tính năng và xem hướng dẫn chi tiết cho người mới!"""
-  await message.answer(
-      welcome_text,
-      reply_markup=get_reply_menu(is_admin=is_admin),
-      parse_mode=ParseMode.HTML
-  )
+@dp.message(Command("sodu"))
+async def cmd_sodu(message: types.Message):
+    user = get_user(message.from_user.id, message.from_user.full_name)
+    await message.reply(f"💰 Số dư hiện tại của bạn: <b>{user['balance']:,.0f} VND</b>")
 
+@dp.message(Command("nap"))
+async def cmd_nap(message: types.Message):
+    args = message.text.split()
+    amount = 50000
+    if len(args) > 1 and args[1].isdigit():
+        amount = int(args[1])
+    
+    user_id = message.from_user.id
+    name = message.from_user.full_name
+    get_user(user_id, name)
+    
+    content_nap = f"NAP{user_id}{random.randint(1000,9999)}"
+    
+    # Gửi bảng QR chuyển khoản cho khách
+    qr_caption = (
+        f"🏦 <b>MÃ QR CHUYỂN KHOẢN TỰ ĐỘNG</b>\n\n"
+        f"• Ngân hàng: <b>MB BANK</b>\n"
+        f"• Số tài khoản: <code>2105200999999</code>\n"
+        f"• Chủ tài khoản: <b>KHONG QUOC BAO</b>\n"
+        f"• Số tiền: <b>{amount:,.0f} VND</b>\n"
+        f"• Nội dung chuyển khoản: <code>{content_nap}</code>\n\n"
+        f"⚠️ <i>Vui lòng dùng app ngân hàng quét mã QR hoặc chuyển đúng nội dung để hệ thống tự động duyệt!</i>"
+    )
+    
+    qr_url = f"https://img.vietqr.io/image/MB-2105200999999-compact.png?amount={amount}&addInfo={content_nap}&accountName=KHONG%20QUOC%20BAO"
+    
+    try:
+        await message.answer_photo(photo=qr_url, caption=qr_caption)
+    except Exception:
+        await message.answer(qr_caption)
+        
+    # GỬI THÔNG BÁO CHO ADMIN NGAY LẬP TỨC
+    admin_msg = (
+        f"🔔 <b>CÓ YÊU CẦU NẠP TIỀN MỚI!</b>\n\n"
+        f"• Khách: {name} (ID: <code>{user_id}</code>)\n"
+        f"• Số tiền yêu cầu: <b>{amount:,.0f} VND</b>\n"
+        f"• Nội dung CK: <code>{content_nap}</code>\n\n"
+        f"👉 Lệnh duyệt tiền nhanh cho admin:\n"
+        f"<code>/cong {amount} {user_id}</code>"
+    )
+    try:
+        await bot.send_message(ADMIN_ID, admin_msg)
+    except Exception as e:
+        logging.error(f"Không gửi được thông báo nạp cho admin: {e}")
 
-# Web server giả lập duy trì UptimeRobot
+@dp.message(Command("rut"))
+async def cmd_rut(message: types.Message):
+    args = message.text.split(maxsplit=3)
+    user_id = message.from_user.id
+    name = message.from_user.full_name
+    user = get_user(user_id, name)
+    
+    if len(args) < 4:
+        guide_text = (
+            f"🏛️ <b>HƯỚNG DẪN RÚT TIỀN</b>\n\n"
+            f"Vui lòng sử dụng cú pháp đầy đủ:\n"
+            f"<code>/rut [Số tiền] [Số TK] [Ngân hàng]</code>\n\n"
+            f"Ví dụ: <code>/rut 200000 2105200999999 MB</code>"
+        )
+        await message.reply(guide_text)
+        return
+    
+    try:
+        amount = float(args[1])
+        stk = args[2]
+        bank = args[3]
+    except ValueError:
+        await message.reply("❌ Số tiền rút không hợp lệ. Vui lòng nhập số nguyên.")
+        return
+        
+    if amount < 50000:
+        await message.reply("❌ Số tiền rút tối thiểu là 50,000 VND.")
+        return
+        
+    if user["balance"] < amount:
+        await message.reply(f"❌ Số dư của bạn không đủ! Số dư hiện tại: {user['balance']:,.0f} VND")
+        return
+        
+    # Trừ tiền tạm thời trong ví chờ admin duyệt
+    user["balance"] -= amount
+    
+    await message.reply(f"✅ Đã tạo yêu cầu rút <b>{amount:,.0f} VND</b> về TK <code>{stk} ({bank})</code> thành công! Vui lòng chờ Admin chuyển khoản.")
+    
+    # Báo về cho Admin
+    admin_alert = (
+        f"💸 <b>CÓ YÊU CẦU RÚT TIỀN!</b>\n\n"
+        f"• Khách: {name} (ID: <code>{user_id}</code>)\n"
+        f"• Số tiền: <b>{amount:,.0f} VND</b>\n"
+        f"• Số tài khoản: <code>{stk}</code>\n"
+        f"• Ngân hàng: <b>{bank}</b>\n\n"
+        f"Nếu từ chối/hoàn tiền, dùng lệnh: <code>/cong {amount} {user_id}</code>"
+    )
+    try:
+        await bot.send_message(ADMIN_ID, admin_alert)
+    except Exception as e:
+        logging.error(f"Lỗi gửi thông báo rút cho admin: {e}")
+
+@dp.message(Command("code"))
+async def cmd_code(message: types.Message):
+    args = message.text.split()
+    if len(args) < 2:
+        await message.reply("⚠️ Vui lòng nhập mã giftcode: <code>/code [MãCode]</code>")
+        return
+    code = args[1].upper()
+    user_id = message.from_user.id
+    user = get_user(user_id, message.from_user.full_name)
+    
+    if code not in active_codes:
+        await message.reply("❌ Mã Giftcode không tồn tại hoặc đã hết hạn!")
+        return
+        
+    gift = active_codes[code]
+    if gift["uses"] <= 0:
+        del active_codes[code]
+        await message.reply("❌ Mã Giftcode đã hết lượt sử dụng!")
+        return
+        
+    user["balance"] += gift["amount"]
+    gift["uses"] -= 1
+    if gift["uses"] <= 0:
+        del active_codes[code]
+        
+    await message.reply(f"🎁 Nhập code thành công! Bạn nhận được <b>{gift['amount']:,.0f} VND</b> vào tài khoản.")
+
+# --- CÁC LỆNH QUẢN TRỊ (ADMIN) ---
+
+@dp.message(Command("cong"))
+async def cmd_cong(message: types.Message):
+    if message.from_user.id != ADMIN_ID:
+        return
+    args = message.text.split()
+    if len(args) < 3:
+        await message.reply("Cú pháp: /cong [số tiền] [id]")
+        return
+    try:
+        amount = float(args[1])
+        target_id = int(args[2])
+        target_user = get_user(target_id)
+        target_user["balance"] += amount
+        await message.reply(f"✅ Đã cộng {amount:,.0f} VND cho user {target_id}. Số dư mới: {target_user['balance']:,.0f}")
+        try:
+            await bot.send_message(target_id, f"🎉 Tài khoản của bạn đã được cộng thêm <b>{amount:,.0f} VND</b> từ hệ thống!")
+        except Exception:
+            pass
+    except Exception as e:
+        await message.reply(f"Lỗi: {e}")
+
+@dp.message(Command("tru"))
+async def cmd_tru(message: types.Message):
+    if message.from_user.id != ADMIN_ID:
+        return
+    args = message.text.split()
+    if len(args) < 3:
+        await message.reply("Cú pháp: /tru [số tiền] [id]")
+        return
+    try:
+        amount = float(args[1])
+        target_id = int(args[2])
+        target_user = get_user(target_id)
+        target_user["balance"] = max(0.0, target_user["balance"] - amount)
+        await message.reply(f"✅ Đã trừ {amount:,.0f} VND của user {target_id}. Số dư mới: {target_user['balance']:,.0f}")
+    except Exception as e:
+        await message.reply(f"Lỗi: {e}")
+
+@dp.message(Command("taocode"))
+async def cmd_taocode(message: types.Message):
+    if message.from_user.id != ADMIN_ID:
+        return
+    args = message.text.split()
+    if len(args) < 4:
+        await message.reply("Cú pháp: /taocode [code] [số tiền] [số lượt]")
+        return
+    code = args[1].upper()
+    try:
+        amount = float(args[2])
+        uses = int(args[3])
+        active_codes[code] = {"amount": amount, "uses": uses}
+        await message.reply(f"✅ Đã tạo thành công Giftcode: <code>{code}</code> | Trị giá: <b>{amount:,.0f} VND</b> | Lượt dùng: <b>{uses}</b>")
+    except Exception as e:
+        await message.reply(f"Lỗi tạo code: {e}")
+
+@dp.message(Command("thongbao"))
+async def cmd_thongbao(message: types.Message):
+    if message.from_user.id != ADMIN_ID:
+        return
+    content = message.text.replace("/thongbao", "").strip()
+    if not content:
+        await message.reply("⚠️ Vui lòng nhập nội dung thông báo.")
+        return
+    try:
+        await bot.send_message(GROUP_CHAT_ID, f"📢 <b>THÔNG BÁO TỪ QUẢN TRỊ VIÊN</b>\n\n{content}")
+        await message.reply("✅ Đã gửi thông báo thành công vào nhóm!")
+    except Exception as e:
+        await message.reply(f"❌ Lỗi gửi thông báo: {e}")
+
+# --- XỬ LÝ ĐẶT CƯỢC TRONG NHÓM ---
+@dp.message(F.text.regexp(r"^/(tai|xiu|c|l|chan|le)\s+(\d+)$", flags=re.IGNORECASE if 're' in globals() else 0) if False else None) # Xử lý thủ công bên dưới an toàn hơn
+async def handle_bet(message: types.Message):
+    if message.chat.id != GROUP_CHAT_ID:
+        return
+        
+    text = message.text.lower().strip()
+    parts = text.split()
+    if len(parts) < 2:
+        return
+        
+    cmd = parts[0].replace("/", "")
+    try:
+        amount = float(parts[1])
+    except ValueError:
+        return
+        
+    if amount < 1000:
+        return
+        
+    user_id = message.from_user.id
+    name = message.from_user.full_name
+    user = get_user(user_id, name)
+    
+    if user["balance"] < amount:
+        await message.reply(f"❌ {name}, số dư của bạn không đủ {amount:,.0f} VND để cược!")
+        return
+        
+    bet_type = ""
+    if cmd in ["tai"]:
+        bet_type = "tai"
+    elif cmd in ["xiu"]:
+        bet_type = "xiu"
+    elif cmd in ["c", "chan"]:
+        bet_type = "chan"
+    elif cmd in ["l", "le"]:
+        bet_type = "le"
+    else:
+        return
+        
+    # Trừ tiền cược
+    user["balance"] -= amount
+    bets_current[user_id] = {"type": bet_type, "amount": amount, "name": name}
+    
+    await message.reply(f"🎲 <b>{name}</b> đã đặt cược thành công <b>{amount:,.0f} VND</b> vào cửa <b>{bet_type.upper()}</b>!")
+
+# Bổ sung bộ lọc text cho bot nhận lệnh cược khi chat trong nhóm
+@dp.message()
+async def catch_all_messages(message: types.Message):
+    if message.chat.id != GROUP_CHAT_ID:
+        return
+    text = message.text.lower().strip()
+    if text.startswith(("/tai", "/xiu", "/c", "/l", "/chan", "/le")):
+        parts = text.split()
+        if len(parts) >= 2 and parts[1].isdigit():
+            cmd = parts[0].replace("/", "")
+            amount = float(parts[1])
+            user_id = message.from_user.id
+            name = message.from_user.full_name
+            user = get_user(user_id, name)
+            
+            if user["balance"] < amount:
+                await message.reply(f"❌ {name}, bạn không đủ tiền cược!")
+                return
+                
+            bet_type = "tai" if cmd == "tai" else ("xiu" if cmd == "xiu" else ("chan" if cmd in ["c", "chan"] else "le"))
+            user["balance"] -= amount
+            bets_current[user_id] = {"type": bet_type, "amount": amount, "name": name}
+            await message.reply(f"✅ <b>{name}</b> cược thành công <b>{amount:,.0f} VND</b> vào <b>{bet_type.upper()}</b>!")
+
+# --- VÒNG LẬP TRÒ CHƠI TỰ ĐỘNG (GAME LOOP) ---
+async def game_loop():
+    global current_session, current_jackpot, recent_tai_xiu, recent_chan_le, bets_current
+    
+    await asyncio.sleep(3) # Chờ bot khởi động ổn định
+    
+    while game_running:
+        bets_current.clear()
+        
+        # 1. BẮT ĐẦU PHIÊN MỚI & MỞ KHÓA CHAT
+        await unlock_chat(GROUP_CHAT_ID)
+        
+        # Tạo chuỗi hiển thị 12 phiên gần nhất (Emoji)
+        tx_display = " ".join(["🔵" if x == 'T' else "🔴" for x in recent_tai_xiu[-12:]])
+        cl_display = " ".join(["⚪" if x == 'C' else "⚫" for x in recent_chan_le[-12:]])
+        
+        start_text = (
+            f"🟢 <b>BẮT ĐẦU PHIÊN MỚI (#{current_session})</b>\n\n"
+            f"⏳ <b>Thời gian đặt cược: 40 giây</b>\n"
+            f"💰 <b>Hũ Jackpot hiện tại: {current_jackpot:,.0f} VND</b>\n\n"
+            f"📊 <b>THỐNG KÊ 12 PHIÊN GẦN NHẤT:</b>\n"
+            f"• Tài / Xỉu: {tx_display}\n"
+            f"• Chẵn / Lẻ: {cl_display}\n\n"
+            f"👇 <i>Gửi lệnh cược ngay vào nhóm:</i>\n"
+            f"<code>/Tai 10000</code> hoặc <code>/Xiu 10000</code>\n"
+            f"<code>/C 10000</code> (Chẵn) hoặc <code>/L 10000</code> (Lẻ)"
+        }
+        
+        try:
+            session_msg = await bot.send_message(GROUP_CHAT_ID, start_text)
+        except Exception as e:
+            logging.error(f"Lỗi gửi tin nhắn phiên mới: {e}")
+            await asyncio.sleep(5)
+            continue
+            
+        # 2. VÒNG LẶP ĐẾM NGƯỢC CẬP NHẬT MỖI 5 GIÂY
+        for remaining in range(35, 0, -5):
+            await asyncio.sleep(5)
+            # Tính tổng tiền cược hiện tại trong phiên
+            total_t = sum(b["amount"] for b in bets_current.values() if b["type"] == "tai")
+            total_x = sum(b["amount"] for b in bets_current.values() if b["type"] == "xiu")
+            
+            update_text = (
+                f"🟢 <b>PHIÊN MỚI (#{current_session}) - ĐANG NHẬN CƯỢC</b>\n\n"
+                f"⏳ Còn lại: <b>{remaining} giây</b>\n"
+                f"💰 Tổng cược Tài: <b>{total_t:,.0f} VND</b> | Xỉu: <b>{total_x:,.0f} VND</b>\n"
+                f"💎 Hũ Jackpot: <b>{current_jackpot:,.0f} VND</b>\n\n"
+                f"👉 Cú pháp: <code>/Tai [tiền]</code> | <code>/Xiu [tiền]</code>"
+            )
+            try:
+                await session_msg.edit_text(update_text)
+            except Exception:
+                pass
+                
+        # 5 giây cuối
+        await asyncio.sleep(5)
+        
+        # 3. KHÓA CHAT & TỔNG KẾT
+        await lock_chat(GROUP_CHAT_ID)
+        try:
+            await session_msg.edit_text(f"🔒 <b>PHIÊN (#{current_session}) ĐÃ ĐÓNG CƯỢC. ĐANG QUAY THƯỞNG...</b>")
+        except Exception:
+            pass
+            
+        await asyncio.sleep(1)
+        
+        # 4. TUNG XÚ XẮC (GỬI HOẠT ẢNH XÚC XẮC THẬT TỪ TELEGRAM)
+        dice1_obj = await bot.send_dice(GROUP_CHAT_ID, emoji="🎲")
+        d1 = dice1_obj.dice.value
+        await asyncio.sleep(1)
+        
+        dice2_obj = await bot.send_dice(GROUP_CHAT_ID, emoji="🎲")
+        d2 = dice2_obj.dice.value
+        await asyncio.sleep(1)
+        
+        dice3_obj = await bot.send_dice(GROUP_CHAT_ID, emoji="🎲")
+        d3 = dice3_obj.dice.value
+        await asyncio.sleep(2)
+        
+        total_points = d1 + d2 + d3
+        is_tai = total_points >= 11
+        tx_result = "Tài" if is_tai else "Xỉu"
+        cl_result = "Chẵn" if total_points % 2 == 0 else "Lẻ"
+        
+        recent_tai_xiu.append('T' if is_tai else 'X')
+        recent_chan_le.append('C' if total_points % 2 == 0 else 'L')
+        
+        # Tính toán thắng thua cho người chơi
+        total_win_money = 0
+        total_lose_money = 0
+        
+        for uid, bet in bets_current.items():
+            b_type = bet["type"]
+            b_amt = bet["amount"]
+            user = get_user(uid)
+            
+            won = False
+            if b_type == "tai" and is_tai:
+                won = True
+            elif b_type == "xiu" and not is_tai:
+                won = True
+            elif b_type == "chan" and total_points % 2 == 0:
+                won = True
+            elif b_type == "le" and total_points % 2 != 0:
+                won = True
+                
+            if won:
+                payout = b_amt * 1.95 # Tỷ lệ ăn 1 ăn 0.95
+                user["balance"] += payout + b_amt
+                total_win_money += payout
+            else:
+                total_lose_money += b_amt
+                
+        # Cập nhật Hũ Jackpot (trích 1% tổng tiền thua vào hũ)
+        added_jackpot = total_lose_money * 0.01
+        current_jackpot += added_jackpot
+        
+        # Thống kê 12 phiên mới nhất để hiển thị kết quả
+        tx_display_res = " ".join(["🔵" if x == 'T' else "🔴" for x in recent_tai_xiu[-12:]])
+        cl_display_res = " ".join(["⚪" if x == 'C' else "⚫" for x in recent_chan_le[-12:]])
+        
+        result_text = (
+            f"🔒 <b>KẾT QUẢ PHIÊN (#{current_session}) - ĐÃ KHÓA CHAT</b>\n\n"
+            f"🎲 Xúc xắc: <b>{d1} - {d2} - {d3}</b> ➔ <b>{total_points} điểm</b> ➔ <b>{tx_result} | {cl_result}</b>\n\n"
+            f"| 📊 TỔNG ĐIỂM XÚC XẮC: {total_points}\n"
+            f"| 💰 TỔNG THẮNG: {total_win_money:,.0f} VND\n"
+            f"| 💸 TỔNG THUA: {total_lose_money:,.0f} VND\n"
+            f"| 📥 CỘNG HŨ: {added_jackpot:,.0f} VND\n"
+            f"| 🏺 HŨ HIỆN TẠI: {current_jackpot:,.0f} VND\n\n"
+            f"📊 <b>THỐNG KÊ 12 PHIÊN GẦN NHẤT TÀI XỈU:</b>\n{tx_display_res}\n\n"
+            f"📊 <b>CHẴN LẺ:</b>\n{cl_display_res}"
+        )
+        
+        try:
+            await bot.send_message(GROUP_CHAT_ID, result_text)
+        except Exception as e:
+            logging.error(f"Lỗi gửi kết quả phiên: {e}")
+            
+        current_session += 1
+        await asyncio.sleep(5) # Nghỉ 5 giây trước khi sang phiên mới
+
+# --- KHỞI CHẠY WEB SERVER (GIỮ BOT ONLINE TRÊN RENDER) ---
 async def handle_ping(request):
-  return web.Response(text="Bot is running with Auto Lock/Unlock & Countdown Timer!")
-
+    return web.Response(text="BTV88 Bot is running smoothly!")
 
 async def start_web_server():
-  app = web.Application()
-  app.router.add_get("/", handle_ping)
-  runner = web.AppRunner(app)
-  await runner.setup()
-  port = int(os.getenv("PORT", 8080))
-  site = web.TCPSite(runner, "0.0.0.0", port)
-  await site.start()
-
+    app = web.Application()
+    app.router.add_get("/", handle_ping)
+    runner = web.AppRunner(app)
+    await runner.setup()
+    port = int(os.environ.get("PORT", 10000))
+    site = web.TCPSite(runner, "0.0.0.0", port)
+    await site.start()
+    logging.info(f"Web server started on port {port}")
 
 async def main():
-  await set_bot_commands_and_menu()
-  await start_web_server()
-  asyncio.create_task(run_game_loop())
-  await dp.start_polling(bot)
-
+    await set_bot_commands(bot)
+    await start_web_server()
+    # Chạy đồng thời vòng lặp game và nhận sự kiện từ Telegram
+    asyncio.create_task(game_loop())
+    await dp.start_polling(bot)
 
 if __name__ == "__main__":
-  asyncio.run(main())
+    asyncio.run(main())
