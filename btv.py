@@ -19,9 +19,9 @@ from aiogram.types import (
 from aiohttp import web
 
 # --- CẤU HÌNH CƠ BẢN ---
-TOKEN = os.getenv("BOT_TOKEN", "8954729214:AAH...your_token...")
+TOKEN = os.getenv("BOT_TOKEN", "8954729214:AAGM9__IwcWXqw0duQ5gPXLv-H6BvEsal0g")
 ADMIN_ID = int(os.getenv("ADMIN_ID", "8985238179"))
-GROUP_CHAT_ID = int(os.getenv("GROUP_CHAT_ID", "-1002233445566"))
+GROUP_CHAT_ID = int(os.getenv("GROUP_CHAT_ID", "-1004332420009"))
 
 logging.basicConfig(level=logging.INFO)
 bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
