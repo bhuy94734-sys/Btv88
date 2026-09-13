@@ -21,7 +21,7 @@ from aiogram.types import (
 from aiohttp import web
 
 # --- CẤU HÌNH CƠ BẢN ---
-TOKEN = "8954729214:AAF1Bwsm9CGJbBY7AX4C-T8j7ra9q18AMTc"  # Thay Token chuẩn tại đây
+TOKEN = "8954729214:AAGOGoidwCLUzJ_pIfkhdAy8nzjpCunwBTc"  # Thay Token chuẩn tại đây
 ADMIN_ID = 8985238179
 GROUP_CHAT_ID = None 
 
