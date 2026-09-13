@@ -8,8 +8,6 @@ from aiogram.enums import ParseMode
 from aiogram.filters import Command
 from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.types import (
-    InlineKeyboardButton,
-    InlineKeyboardMarkup,
     KeyboardButton,
     ReplyKeyboardMarkup,
     BotCommand,
@@ -19,9 +17,10 @@ from aiogram.types import (
 from aiohttp import web
 
 # --- CẤU HÌNH CƠ BẢN ---
-TOKEN = os.getenv("BOT_TOKEN", "8954729214:AAF1Bwsm9CGJbBY7AX4C-T8j7ra9q18AMTc")
-ADMIN_ID = int(os.getenv("ADMIN_ID", "8985238179"))
-GROUP_CHAT_ID = None  # Sẽ tự động cập nhật ID chuẩn ngay khi có tin nhắn trong nhóm
+# 💥 THAY THẾ CHUỖI TOKEN CHUẨN LẤY TỪ BOTFATHER VÀO ĐÂY:
+TOKEN = "8954729214:AAF1Bwsm9CGJbBY7AX4C-T8j7ra9q18AMTc"
+ADMIN_ID = 8985238179
+GROUP_CHAT_ID = None  # Bot sẽ tự nhận diện ID khi bạn nhắn 1 tin vào nhóm
 
 logging.basicConfig(level=logging.INFO)
 bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
@@ -54,7 +53,10 @@ async def set_bot_commands(bot: Bot):
         BotCommand(command="rut", description="Tạo lệnh rút tiền"),
         BotCommand(command="code", description="Nhập Giftcode nhận thưởng"),
     ]
-    await bot.set_my_commands(commands, scope=BotCommandScopeDefault())
+    try:
+        await bot.set_my_commands(commands, scope=BotCommandScopeDefault())
+    except Exception as e:
+        logging.error(f"Lỗi set commands: {e}")
 
 main_menu_kb = ReplyKeyboardMarkup(
     keyboard=[
@@ -197,11 +199,10 @@ async def btn_code(message: types.Message): await message.answer("Cú pháp: <co
 @dp.message()
 async def catch_all_messages(message: types.Message):
     global GROUP_CHAT_ID
-    # Tự động cập nhật ID nhóm chuẩn khi có bất kỳ tin nhắn nào trong nhóm
     if message.chat.type in ["group", "supergroup"]:
         if GROUP_CHAT_ID != message.chat.id:
             GROUP_CHAT_ID = message.chat.id
-            logging.info(f"🎯 Đã tự động cập nhật ID Nhóm chuẩn: {GROUP_CHAT_ID}")
+            logging.info(f"🎯 Đã kết nối thành công với Nhóm ID: {GROUP_CHAT_ID}")
             
         if not message.text:
             return
@@ -231,14 +232,12 @@ async def game_loop():
     global current_session, current_jackpot, recent_tai_xiu, recent_chan_le, bets_current, GROUP_CHAT_ID
     
     await asyncio.sleep(3)
-    logging.info("Game loop started successfully!")
+    logging.info("Game loop initialized!")
     
     while game_running:
         try:
-            # Chờ nhận diện ID nhóm nếu chưa có
             if not GROUP_CHAT_ID:
-                logging.info("⏳ Đang chờ tin nhắn trong nhóm để tự động nhận dạng Group ID...")
-                await asyncio.sleep(5)
+                await asyncio.sleep(3)
                 continue
 
             bets_current.clear()
@@ -344,7 +343,7 @@ async def game_loop():
             await asyncio.sleep(5)
 
 async def handle_ping(request):
-    return web.Response(text="BTV88 Bot Running!")
+    return web.Response(text="BTV88 Bot Active!")
 
 async def start_web_server():
     app = web.Application()
