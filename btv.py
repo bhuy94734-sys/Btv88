@@ -17,10 +17,9 @@ from aiogram.types import (
 from aiohttp import web
 
 # --- CẤU HÌNH CƠ BẢN ---
-# 💥 THAY THẾ CHUỖI TOKEN CHUẨN LẤY TỪ BOTFATHER VÀO ĐÂY:
-TOKEN = "8954729214:AAF1Bwsm9CGJbBY7AX4C-T8j7ra9q18AMTc"
+TOKEN = "DIEN_TOKEN_CHUAN_VAO_DAY"  # Dán Token của bạn vào đây
 ADMIN_ID = 8985238179
-GROUP_CHAT_ID = None  # Bot sẽ tự nhận diện ID khi bạn nhắn 1 tin vào nhóm
+GROUP_CHAT_ID = None 
 
 logging.basicConfig(level=logging.INFO)
 bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
@@ -73,7 +72,7 @@ async def lock_chat(chat_id: int):
             permissions=ChatPermissions(can_send_messages=False)
         )
     except Exception as e:
-        logging.error(f"Lỗi khóa chat: {e}")
+        logging.warning(f"Không thể khóa chat (Thiếu quyền Admin): {e}")
 
 async def unlock_chat(chat_id: int):
     try:
@@ -89,10 +88,15 @@ async def unlock_chat(chat_id: int):
             )
         )
     except Exception as e:
-        logging.error(f"Lỗi mở khóa chat: {e}")
+        logging.warning(f"Không thể mở khóa chat (Thiếu quyền Admin): {e}")
 
 @dp.message(Command("start"))
 async def cmd_start(message: types.Message):
+    global GROUP_CHAT_ID
+    if message.chat.type in ["group", "supergroup"]:
+        GROUP_CHAT_ID = message.chat.id
+        logging.info(f"🎯 Đã nhận diện Group ID từ lệnh start: {GROUP_CHAT_ID}")
+        
     get_user(message.from_user.id, message.from_user.full_name)
     text = (
         f"💎 <b>BTV88 CLUB - CỔNG GAME TÀI XỈU UY TÍN</b> 💎\n\n"
@@ -202,7 +206,7 @@ async def catch_all_messages(message: types.Message):
     if message.chat.type in ["group", "supergroup"]:
         if GROUP_CHAT_ID != message.chat.id:
             GROUP_CHAT_ID = message.chat.id
-            logging.info(f"🎯 Đã kết nối thành công với Nhóm ID: {GROUP_CHAT_ID}")
+            logging.info(f"🎯 Đã nhận dạng Group ID: {GROUP_CHAT_ID}")
             
         if not message.text:
             return
@@ -227,12 +231,12 @@ async def catch_all_messages(message: types.Message):
                 bets_current[user_id] = {"type": bet_type, "amount": amount, "name": name}
                 await message.reply(f"✅ <b>{name}</b> cược <b>{amount:,.0f} VND</b> vào <b>{bet_type.upper()}</b>!")
 
-# --- VÒNG LẬP TRÒ CHƠI ---
+# --- VÒNG LẬP TRÒ CHƠI TỰ ĐỘNG ---
 async def game_loop():
     global current_session, current_jackpot, recent_tai_xiu, recent_chan_le, bets_current, GROUP_CHAT_ID
     
-    await asyncio.sleep(3)
-    logging.info("Game loop initialized!")
+    logging.info("⏳ Đang khởi tạo Vòng lặp trò chơi...")
+    await asyncio.sleep(5)
     
     while game_running:
         try:
@@ -336,7 +340,7 @@ async def game_loop():
             
             await bot.send_message(GROUP_CHAT_ID, result_text)
             current_session += 1
-            await asyncio.sleep(3)
+            await asyncio.sleep(4)
             
         except Exception as e:
             logging.error(f"Lỗi game loop: {e}")
