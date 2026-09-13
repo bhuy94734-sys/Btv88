@@ -8,4 +8,4 @@ RUN pip install --no-cache-dir --upgrade pip && \
 
 COPY . .
 
-CMD ["python", "main.py"]
+CMD ["python", "btv.py"]
