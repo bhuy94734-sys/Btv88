@@ -46,7 +46,6 @@ users_db = {
     }
 }
 bets_current = {} 
-# Format active_codes: { "CODE_NAME": {"amount": float, "uses": int, "expire_at": datetime} }
 active_codes = {} 
 
 def get_user(user_id: int, name: str = "Thành viên"):
@@ -74,7 +73,6 @@ async def set_bot_commands(bot: Bot):
     except Exception as e:
         logging.error(f"Lỗi set commands: {e}")
 
-# MENU BÀN PHÍM CẬP NHẬT THÊM NÚT CSKH
 main_menu_kb = ReplyKeyboardMarkup(
     keyboard=[
         [KeyboardButton(text="👤 Tài Khoản Của Tôi"), KeyboardButton(text="🎮 Danh Sách Game")],
@@ -375,7 +373,6 @@ async def btn_history_rut(message: types.Message):
     text = "💸 <b>LỊCH SỬ RÚT TIỀN GẦN ĐÂY:</b>\n\n" + "\n".join([f"• {item}" for item in user["history_rut"][-5:]])
     await message.answer(text)
 
-# --- THÊM NÚT CHĂM SÓC KHÁCH HÀNG ---
 @dp.message(F.text == "🎧 CSKH")
 async def btn_cskh(message: types.Message):
     text = (
@@ -400,7 +397,6 @@ async def cmd_code(message: types.Message):
         
     gift = active_codes[code]
     
-    # Kiểm tra thời gian hết hạn code (3 phút)
     if gift.get("expire_at") and datetime.now() > gift["expire_at"]:
         del active_codes[code]
         await message.reply("❌ Mã Giftcode này đã quá thời gian sử dụng (3 phút)!")
@@ -414,7 +410,6 @@ async def cmd_code(message: types.Message):
     user["balance"] += gift["amount"]
     gift["uses"] -= 1
     
-    # Xóa code ngay lập tức vì giới hạn 1 lượt dùng
     if gift["uses"] <= 0:
         del active_codes[code]
 
@@ -452,9 +447,9 @@ async def catch_all_messages(message: types.Message):
                 bets_current[user_id] = {"type": bet_type, "amount": amount, "name": name}
                 await message.reply(f"✅ <b>{name}</b> cược <b>{amount:,.0f} VND</b> vào <b>{bet_type.upper()}</b>!")
 
-# --- THÊM CƠ CHẾ TỰ ĐỘNG PHÁT CODE RANDOM 35 PHÚT ---
+# --- VÒNG LẬP CODE TỰ ĐỘNG ---
 async def auto_code_loop():
-    await asyncio.sleep(10) # Chờ bot sẵn sàng
+    await asyncio.sleep(10)
     while game_running:
         try:
             if GROUP_CHAT_ID:
@@ -462,9 +457,7 @@ async def auto_code_loop():
                 expire_time = datetime.now() + timedelta(minutes=3)
                 
                 for _ in range(5):
-                    # Tạo mã random 6 ký tự
                     code_str = "BTV" + ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
-                    # Tiền random từ 10 đến 2,000 VND
                     rand_val = random.randint(10, 2000)
                     
                     active_codes[code_str] = {
@@ -485,10 +478,9 @@ async def auto_code_loop():
         except Exception as e:
             logging.error(f"Lỗi tự động phát code: {e}")
             
-        # Lặp lại sau mỗi 35 phút (35 * 60 = 2100 giây)
         await asyncio.sleep(2100)
 
-# --- VÒNG LẬP TRÒ CHƠI TỰ ĐỘNG ---
+# --- VÒNG LẬP GAME TỰ ĐỘNG ---
 async def game_loop():
     global current_session, current_jackpot, recent_tai_xiu, recent_chan_le, bets_current, GROUP_CHAT_ID
     
@@ -620,11 +612,14 @@ async def main():
     site = web.TCPSite(runner, "0.0.0.0", port)
     await site.start()
     
-    # Chạy vòng lặp game và tự động tạo code ngầm
     asyncio.create_task(game_loop())
     asyncio.create_task(auto_code_loop())
     
-    await dp.start_polling(bot)
+    # Đóng session an toàn khi ngắt kết nối để khắc phục lỗi Render
+    try:
+        await dp.start_polling(bot)
+    finally:
+        await bot.session.close()
 
 if __name__ == "__main__":
     asyncio.run(main())
