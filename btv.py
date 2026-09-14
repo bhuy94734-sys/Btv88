@@ -36,6 +36,9 @@ dp = Dispatcher(storage=storage)
 class NapMoneyState(StatesGroup):
     waiting_for_amount = State()
 
+class SlotPGState(StatesGroup):
+    waiting_for_spins = State()
+
 # --- BIẾN TRẠNG THÁI TRÒ CHƠI & KHUYẾN MÃI ---
 current_session = 105027
 current_jackpot = 600000.0
@@ -110,6 +113,9 @@ def get_game_list_inline_kb():
         [InlineKeyboardButton(text="Bỏng Ngô 🍿", callback_data="game_ngo"), InlineKeyboardButton(text="Bóng Rổ 🏀", callback_data="game_br")],
         [InlineKeyboardButton(text="Bóng Đá ⚽️", callback_data="game_bd"), InlineKeyboardButton(text="Bowling 🎳", callback_data="game_bw")],
         [InlineKeyboardButton(text="Phi Tiêu 🎯", callback_data="game_pt"), InlineKeyboardButton(text="Kéo Búa Bao 🖐️✌️👊", callback_data="game_kbb")],
+        [InlineKeyboardButton(text="Quay Hũ PG 🎰", callback_data="game_slot_pg"), InlineKeyboardButton(text="Cứu Thương 🚑", callback_data="game_cuu_thuong")],
+        [InlineKeyboardButton(text="Đèn Đỏ Đèn Xanh🚙", callback_data="game_den_do_den_xanh"), InlineKeyboardButton(text="Rót Rượu 🍷", callback_data="game_rot_ruou")],
+        [InlineKeyboardButton(text="Bầu Cua 🦀", callback_data="game_bau_cua")],
         [InlineKeyboardButton(text="❌ Đóng Menu", callback_data="game_close")]
     ])
     return keyboard
@@ -390,7 +396,7 @@ async def btn_game_list(message: types.Message):
 
 # --- CALLBACK QUERY HANDLER CHO DANH SÁCH GAME ---
 @dp.callback_query(F.data.startswith("game_"))
-async def process_game_callback(callback: types.CallbackQuery):
+async def process_game_callback(callback: types.CallbackQuery, state: FSMContext):
     await callback.answer()
     game_code = callback.data
     
@@ -489,6 +495,61 @@ async def process_game_callback(callback: types.CallbackQuery):
             "• Chọn Bao 🖐️: <code>/Bao [số tiền cược]</code>\n"
             "(Cược tối thiểu 10,000đ)"
         )
+    elif game_code == "game_slot_pg":
+        text = (
+            "🎰 SLOT PG:\n"
+            "👉 Gửi emoji Slot Telegram thật 🎰 để chơi.\n"
+            "👉 Khi BOT trả lời mới được tính là đã đặt cược thành công.\n"
+            "🌟 Thể lệ:\n"
+            "Bot sẽ trừ tiền và tự động tung icon 🎰 có hoạt ảnh của telegram và đối chiếu kết quả với:\n"
+            "🎁 3 Nho: x10 số tiền cược\n"
+            "🎁 3 Chanh: x10 số tiền cược\n"
+            "🎁 3 Bar: x15 số tiền cược\n"
+            "🎁 777: x25 số tiền cược\n\n"
+            "🚀 Phí: 1.000/1 lần cược\n\n"
+            "👉 Vui lòng nhập số lượt quay bạn muốn cược:"
+        )
+        await state.set_state(SlotPGState.waiting_for_spins)
+    elif game_code == "game_cuu_thuong":
+        text = (
+            "🚑 <b>GAME CỨU THƯƠNG</b>\n\n"
+            "<b>Hướng dẫn chơi:</b>\n"
+            "Xe cứu thương Đổ là Thắng (x3,5 tiền cược)\n"
+            "Xe cứu thương Không Đổ là Thua\n\n"
+            "Lệnh đặt cược: <code>/cuu (số tiền cược)</code>"
+        )
+    elif game_code == "game_den_do_den_xanh":
+        text = (
+            "🚙 <b>GAME ĐÈN ĐỎ ĐÈN XANH</b>\n\n"
+            "<b>Hướng dẫn chơi:</b>\n"
+            "Xe Vượt đèn Đỏ là Thắng (X2,2 số tiền cược)\n"
+            "Xe Dừng đèn Đỏ là Thua\n\n"
+            "Lệnh đặt cược: <code>/vuot (số tiền cược)</code>"
+        )
+    elif game_code == "game_rot_ruou":
+        text = (
+            "🍷 <b>GAME RÓT RƯỢU</b>\n\n"
+            "<b>Hướng dẫn chơi:</b>\n"
+            "Rót rượu đầy cốc là Thắng (x2,5 số tiền cược)\n"
+            "Rót rượu không đầy cốc là Thua\n"
+            "Rót rượu tràn ra khỏi cốc là Nổ Hũ (x99 số tiền cược)\n\n"
+            "Lệnh đặt cược: <code>/rot (số tiền cược)</code>"
+        )
+    elif game_code == "game_bau_cua":
+        text = (
+            "🎲 <b>BẦU CUA</b>\n\n"
+            "🍐 BẦU  - Nếu xúc xắc ra số 1\n"
+            "🦐 TÔM  - Nếu xúc xắc ra số 2\n"
+            "🦀 CUA  - Nếu xúc xắc ra số 3\n"
+            "🐟 CÁ   - Nếu xúc xắc ra số 4\n"
+            "🐓 GÀ   - Nếu xúc xắc ra số 5\n"
+            "🦌 NAI  - Nếu xúc xắc ra số 6\n\n"
+            "Tỷ lệ: ra 1 viên x1.95 | ra 2 viên x3 | ra 3 viên x4\n"
+            "Đặt tối đa 3 cửa trong 1 lệnh.\n\n"
+            "👉 Tối thiểu là 2.000 và tối đa là 300.000\n\n"
+            "👉 Cách chơi: [cửa 1] [cửa 2] [cửa 3] [tiền cược]\n"
+            "VD: <code>BAU CUA CA 5000</code> hoặc <code>CUA 10000</code>"
+        )
     else:
         text = "Mục game đang cập nhật!"
 
@@ -496,6 +557,63 @@ async def process_game_callback(callback: types.CallbackQuery):
         await callback.message.answer(text)
     except Exception as e:
         logging.error(f"Lỗi gửi tin nhắn callback: {e}")
+
+# --- XỬ LÝ NHẬP SỐ LƯỢT QUAY SLOT PG ---
+@dp.message(SlotPGState.waiting_for_spins)
+async def process_slot_spins_input(message: types.Message, state: FSMContext):
+    if not message.text or not message.text.isdigit():
+        await message.reply("❌ Vui lòng nhập số lượt quay hợp lệ! Ví dụ: 5")
+        return
+    
+    spins = int(message.text)
+    if spins <= 0:
+        await message.reply("❌ Số lượt quay phải lớn hơn 0!")
+        return
+
+    user = get_user(message.from_user.id, message.from_user.full_name)
+    total_cost = spins * 1000.0
+
+    if user["balance"] < total_cost:
+        await message.reply(f"❌ Số dư không đủ! Cần {total_cost:,.0f} VND cho {spins} lượt quay. Số dư hiện tại: {user['balance']:,.0f} VND")
+        await state.clear()
+        return
+
+    await state.clear()
+    user["balance"] -= total_cost
+    user["total_cuoc"] += total_cost
+
+    await message.reply(f"🎰 Đã trừ <b>{total_cost:,.0f} VND</b> cho <b>{spins}</b> lượt quay PG Slot. Đang tiến hành quay...")
+
+    slot_outcomes = {
+        1: ("BAR BAR BAR", 15.0),
+        22: ("Nho Nho Nho", 10.0),
+        43: ("Chanh Chanh Chanh", 10.0),
+        64: ("777", 25.0)
+    }
+
+    total_won = 0.0
+
+    for idx in range(1, spins + 1):
+        dice_msg = await bot.send_dice(chat_id=message.chat.id, emoji="🎰")
+        await asyncio.sleep(2.5)
+        val = dice_msg.dice.value
+
+        if val in slot_outcomes:
+            name, rate = slot_outcomes[val]
+            win_amt = 1000.0 * rate
+            total_won += win_amt
+            user["balance"] += win_amt
+            await message.reply(f"🎉 Lượt quay {idx}/{spins}: Trúng <b>{name}</b>! Nhận thưởng <b>+{win_amt:,.0f} VND</b> (x{rate:.0f})")
+        else:
+            await message.reply(f"❌ Lượt quay {idx}/{spins}: Thua! (Không ra 3 Nho, 3 Chanh, 3 Bar, 777)")
+
+    await message.reply(
+        f"🏁 <b>KẾT QUẢ TỔNG CỘNG SLOT PG:</b>\n"
+        f"• Tổng lượt quay: {spins}\n"
+        f"• Tổng tiền cược: {total_cost:,.0f} VND\n"
+        f"• Tổng tiền thắng: <b>+{total_won:,.0f} VND</b>\n"
+        f"💰 Số dư còn lại: <b>{user['balance']:,.0f} VND</b>"
+    )
 
 @dp.message(Command("sodu"))
 @dp.message(F.text == "💰 Số Dư")
@@ -1054,6 +1172,169 @@ async def catch_all_messages(message: types.Message):
         else:
             await message.reply("⚠️ Cú pháp: <code>/Bua [số tiền]</code> | <code>/Keo [số tiền]</code> | <code>/Bao [số tiền]</code>")
         return
+
+    # GAME CỨU THƯƠNG (KHÁCH LUÔN THUA)
+    if text.startswith("/cuu"):
+        if len(parts) >= 2 and parts[1].isdigit():
+            amount = float(parts[1])
+            if amount <= 0:
+                await message.reply("⚠️ Số tiền cược phải lớn hơn 0!")
+                return
+            if user["balance"] < amount:
+                await message.reply(f"❌ Số dư không đủ! Số dư hiện tại: {user['balance']:,.0f} VND. Vui lòng nạp thêm!")
+                return
+
+            user["balance"] -= amount
+            user["total_cuoc"] += amount
+
+            await bot.send_message(chat_id=message.chat.id, text="🚑")
+            await asyncio.sleep(2)
+
+            res_text = (
+                f"❌ <b>KẾT QUẢ CỨU THƯƠNG: THUA!</b>\n"
+                f"🚑 Xe cứu thương KHÔNG ĐỔ!\n"
+                f"💸 Số tiền thua: <b>-{amount:,.0f} VND</b>\n"
+                f"💵 Số dư còn lại: <b>{user['balance']:,.0f} VND</b>"
+            )
+            await message.reply(res_text)
+        else:
+            await message.reply("⚠️ Cú pháp: <code>/cuu (số tiền cược)</code>")
+        return
+
+    # GAME ĐÈN ĐỎ ĐÈN XANH (KHÁCH LUÔN THUA)
+    if text.startswith("/vuot"):
+        if len(parts) >= 2 and parts[1].isdigit():
+            amount = float(parts[1])
+            if amount <= 0:
+                await message.reply("⚠️ Số tiền cược phải lớn hơn 0!")
+                return
+            if user["balance"] < amount:
+                await message.reply(f"❌ Số dư không đủ! Số dư hiện tại: {user['balance']:,.0f} VND. Vui lòng nạp thêm!")
+                return
+
+            user["balance"] -= amount
+            user["total_cuoc"] += amount
+
+            await bot.send_message(chat_id=message.chat.id, text="🚙")
+            await asyncio.sleep(2)
+
+            res_text = (
+                f"❌ <b>KẾT QUẢ ĐÈN ĐỎ ĐÈN XANH: THUA!</b>\n"
+                f"🚙 Xe đã Dừng lại trước đèn đỏ!\n"
+                f"💸 Số tiền thua: <b>-{amount:,.0f} VND</b>\n"
+                f"💵 Số dư còn lại: <b>{user['balance']:,.0f} VND</b>"
+            )
+            await message.reply(res_text)
+        else:
+            await message.reply("⚠️ Cú pháp: <code>/vuot (số tiền cược)</code>")
+        return
+
+    # GAME RÓT RƯỢU (KHÁCH LUÔN THUA)
+    if text.startswith("/rot"):
+        if len(parts) >= 2 and parts[1].isdigit():
+            amount = float(parts[1])
+            if amount <= 0:
+                await message.reply("⚠️ Số tiền cược phải lớn hơn 0!")
+                return
+            if user["balance"] < amount:
+                await message.reply(f"❌ Số dư không đủ! Số dư hiện tại: {user['balance']:,.0f} VND. Vui lòng nạp thêm!")
+                return
+
+            user["balance"] -= amount
+            user["total_cuoc"] += amount
+
+            await bot.send_message(chat_id=message.chat.id, text="🍷")
+            await asyncio.sleep(2)
+
+            res_text = (
+                f"❌ <b>KẾT QUẢ RÓT RƯỢU: THUA!</b>\n"
+                f"🍷 Rót rượu KHÔNG ĐẦY CỐC!\n"
+                f"💸 Số tiền thua: <b>-{amount:,.0f} VND</b>\n"
+                f"💵 Số dư còn lại: <b>{user['balance']:,.0f} VND</b>"
+            )
+            await message.reply(res_text)
+        else:
+            await message.reply("⚠️ Cú pháp: <code>/rot (số tiền cược)</code>")
+        return
+
+    # GAME BẦU CUA
+    bau_cua_map = {
+        "BAU": 1, "BẦU": 1,
+        "TOM": 2, "TÔM": 2,
+        "CUA": 3,
+        "CA": 4, "CÁ": 4,
+        "GA": 5, "GÀ": 5,
+        "NAI": 6
+    }
+    bau_cua_names = {1: "🍐 BẦU", 2: "🦐 TÔM", 3: "🦀 CUA", 4: "🐟 CÁ", 5: "🐓 GÀ", 6: "🦌 NAI"}
+
+    raw_tokens = [t.upper() for t in parts]
+    if raw_tokens and raw_tokens[-1].isdigit():
+        amt = float(raw_tokens[-1])
+        door_tokens = raw_tokens[:-1]
+        
+        valid_doors = [bau_cua_map[t] for t in door_tokens if t in bau_cua_map]
+        
+        if len(valid_doors) > 0 and len(valid_doors) == len(door_tokens) and len(valid_doors) <= 3:
+            if amt < 2000 or amt > 300000:
+                await message.reply("⚠️ Tiền cược Bầu Cua tối thiểu là 2.000đ và tối đa là 300.000đ!")
+                return
+            if user["balance"] < amt:
+                await message.reply(f"❌ Số dư không đủ! Số dư hiện tại: {user['balance']:,.0f} VND.")
+                return
+
+            user["balance"] -= amt
+            user["total_cuoc"] += amt
+
+            d1 = (await bot.send_dice(chat_id=message.chat.id, emoji="🎲")).dice.value
+            await asyncio.sleep(1)
+            d2 = (await bot.send_dice(chat_id=message.chat.id, emoji="🎲")).dice.value
+            await asyncio.sleep(1)
+            d3 = (await bot.send_dice(chat_id=message.chat.id, emoji="🎲")).dice.value
+            await asyncio.sleep(1)
+
+            results = [d1, d2, d3]
+            res_str = ", ".join([bau_cua_names[r] for r in results])
+
+            total_win = 0.0
+            win_details = []
+
+            for door in set(valid_doors):
+                match_count = results.count(door)
+                if match_count == 1:
+                    win_amt = amt * 1.95
+                    total_win += win_amt
+                    win_details.append(f"{bau_cua_names[door]} (x1): +{win_amt:,.0f} VND")
+                elif match_count == 2:
+                    win_amt = amt * 3.0
+                    total_win += win_amt
+                    win_details.append(f"{bau_cua_names[door]} (x2): +{win_amt:,.0f} VND")
+                elif match_count == 3:
+                    win_amt = amt * 4.0
+                    total_win += win_amt
+                    win_details.append(f"{bau_cua_names[door]} (x3): +{win_amt:,.0f} VND")
+
+            user["balance"] += total_win
+
+            if total_win > 0:
+                detail_str = "\n".join(win_details)
+                res_text = (
+                    f"🎉 <b>KẾT QUẢ BẦU CUA: THẮNG!</b>\n\n"
+                    f"🎲 Kết quả xúc xắc: <b>{res_str}</b>\n"
+                    f"{detail_str}\n"
+                    f"💰 Tổng tiền thắng: <b>+{total_win:,.0f} VND</b>\n"
+                    f"💵 Số dư hiện tại: <b>{user['balance']:,.0f} VND</b>"
+                )
+            else:
+                res_text = (
+                    f"❌ <b>KẾT QUẢ BẦU CUA: THUA!</b>\n\n"
+                    f"🎲 Kết quả xúc xắc: <b>{res_str}</b>\n"
+                    f"💸 Bạn không trúng cửa nào!\n"
+                    f"💸 Số tiền thua: <b>-{amt:,.0f} VND</b>\n"
+                    f"💵 Số dư còn lại: <b>{user['balance']:,.0f} VND</b>"
+                )
+            await message.reply(res_text)
+            return
 
 # --- VÒNG LẬP CODE TỰ ĐỘNG ---
 async def auto_code_loop():
