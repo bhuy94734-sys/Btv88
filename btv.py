@@ -663,8 +663,8 @@ async def process_nap_amount(message: types.Message, amount: int, state: FSMCont
     qr_caption = (
         f"💳 <b>HƯỚNG DẪN NẠP TIỀN</b> 💳\n\n"
         f"📌 <b>BƯỚC 1:</b> Quét mã QR bên dưới hoặc chuyển khoản thủ công theo thông tin:\n"
-        f"• Ngân hàng: <b>MB BANK</b>\n"
-        f"• Số tài khoản: <code>2105200999999</code>\n"
+        f"• Ngân hàng: <b>ACB BANK</b>\n"
+        f"• Số tài khoản: <code>27673211</code>\n"
         f"• Chủ tài khoản: <b>KHONG QUOC BAO</b>\n"
         f"• Số tiền: <b>{amount:,.0f} VND</b>\n"
         f"• Nội dung CK bắt buộc: <code>{content_nap}</code>\n\n"
