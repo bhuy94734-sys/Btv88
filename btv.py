@@ -23,8 +23,8 @@ from aiogram.types import (
 from aiohttp import web
 
 # --- CẤU HÌNH CƠ BẢN ---
-TOKEN = "8954729214:AAGOGoidwCLUzJ_pIfkhdAy8nzjpCunwBTc"
-ADMIN_ID = 8985238179
+TOKEN = "8905955749:AAGmfbtPR0jmox3sMW3t84nK09QMq4SLiyY"
+ADMIN_ID = 8312903264
 GROUP_CHAT_ID = None 
 
 logging.basicConfig(level=logging.INFO)
