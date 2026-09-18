@@ -413,7 +413,7 @@ async def process_game_callback(callback: types.CallbackQuery, state: FSMContext
             "📌 <b>Hướng dẫn chơi:</b> Tham gia vào nhóm chat để đặt cược cùng mọi người.\n"
             "• Đặt Tài: <code>/Tai [số tiền]</code>\n"
             "• Đặt Xỉu: <code>/Xiu [số tiền]</code>\n\n"
-            "👉 <b>Link Room tung xúc xắc:</b> https://t.me/btv88kiemtien"
+            "👉 <b>Link Room tung xúc xắc:</b> https://t.me/btv88club"
         )
     elif game_code == "game_cl":
         text = (
@@ -421,7 +421,7 @@ async def process_game_callback(callback: types.CallbackQuery, state: FSMContext
             "📌 <b>Hướng dẫn chơi:</b> Tham gia vào nhóm chat để đặt cược cùng mọi người.\n"
             "• Đặt Chẵn: <code>/C [số tiền]</code>\n"
             "• Đặt Lẻ: <code>/L [số tiền]</code>\n\n"
-            "👉 <b>Link Room tung chẵn lẻ:</b> https://t.me/btv88kiemtien"
+            "👉 <b>Link Room tung chẵn lẻ:</b> https://t.me/btv88club"
         )
     elif game_code == "game_ngo":
         text = (
