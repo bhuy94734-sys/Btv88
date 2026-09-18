@@ -674,7 +674,8 @@ async def process_nap_amount(message: types.Message, amount: int, state: FSMCont
     if bonus_promo > 0:
         qr_caption += f"\n\n🎁 <b>Khuyến mãi áp dụng:</b> +{promo_config['percent']}% ({bonus_promo:,.0f} VND) thành {total_add:,.0f} VND!"
 
-    qr_url = f"https://img.vietqr.io/image/MB-2105200999999-compact.png?amount={amount}&addInfo={content_nap}&accountName=KHONG%20QUOC%20BAO"
+    Qr_url = f"https://img.vietqr.io/image/ACB-27673211-compact.png?amount={amount}&addInfo={content_nap}&accountName=KHONG%20QUOC%20BAO"
+
     
     try:
         await message.answer_photo(photo=qr_url, caption=qr_caption)
@@ -850,7 +851,7 @@ async def btn_history_rut(message: types.Message):
 async def btn_cskh(message: types.Message):
     text = (
         "🎧 <b>MỌI VẤN ĐỀ VUI LÒNG LIÊN HỆ:</b>\n\n"
-        "<b>CSKH:</b> @Miutea88"
+        "<b>CSKH:</b> @cskhbtv88club"
     )
     await message.answer(text)
 
