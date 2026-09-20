@@ -23,7 +23,7 @@ from aiogram.types import (
 from aiohttp import web
 
 # --- CẤU HÌNH CƠ BẢN ---
-TOKEN = "8905955749:AAGUq2yG2ZaQyNdJ1cRM3ozn6ysb4697oCM"
+TOKEN = "8905955749:AAEMsBQnNzAvzun6vaMG__ZGMqJHrd6nrGg"
 ADMIN_ID = 8312903264
 GROUP_CHAT_ID = None 
 
