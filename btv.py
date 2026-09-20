@@ -20,10 +20,10 @@ from aiogram.types import (
     BotCommandScopeDefault,
     ChatPermissions,
 )
-from aiohttp import web
+from aiogram.exceptions import TelegramRetryAfter
 
 # --- CẤU HÌNH CƠ BẢN ---
-TOKEN = "8905955749:AAEMsBQnNzAvzun6vaMG__ZGMqJHrd6nrGg"
+TOKEN = os.getenv("BOT_TOKEN", "8905955749:AAEMsBQnNzAvzun6vaMG__ZGMqJHrd6nrGg")
 ADMIN_ID = 8312903264
 GROUP_CHAT_ID = None 
 
@@ -85,7 +85,9 @@ def get_user(user_id: int, name: str = "Thành viên", referrer_id: int = None):
             "invite_count": 0,
             "ref_commission": 0.0
         }
-        if referrer_id and referrer_id in users_db and referrer_id != user_id:
+        if referrer_id and referrer_id != user_id:
+            if referrer_id not in users_db:
+                get_user(referrer_id)
             users_db[referrer_id]["invite_count"] += 1
     return users_db[user_id]
 
@@ -228,7 +230,7 @@ async def cmd_admin_checkplayer(message: types.Message):
     except ValueError:
         await message.reply("❌ ID không hợp lệ!")
 
-@dp.message(Command("taocode"))
+@dp.message(Command("taocode", "tao_code"))
 async def cmd_admin_taocode_new(message: types.Message):
     if message.from_user.id != ADMIN_ID:
         return
@@ -332,23 +334,6 @@ async def cmd_admin_tru(message: types.Message):
         await message.reply(f"✅ Đã trừ <b>{amount:,.0f} VND</b> của ID <code>{target_id}</code>. Số dư mới: {target_user['balance']:,.0f} VND")
     except ValueError:
         await message.reply("❌ ID hoặc số tiền không hợp lệ!")
-
-@dp.message(Command("tao_code"))
-async def cmd_admin_tao_code(message: types.Message):
-    if message.from_user.id != ADMIN_ID:
-        return
-    args = message.text.split()
-    if len(args) < 4:
-        await message.reply("⚠️ Cú pháp: <code>/tao_code [Mã_Code] [Số_tiền] [Số_lượt]</code>")
-        return
-    code = args[1].upper()
-    try:
-        amount = float(args[2])
-        uses = int(args[3])
-        active_codes[code] = {"amount": amount, "uses": uses, "expire_at": None}
-        await message.reply(f"🎁 Đã tạo Giftcode <b>{code}</b>: <b>{amount:,.0f} VND</b> ({uses} lượt dùng)")
-    except ValueError:
-        await message.reply("❌ Số tiền hoặc số lượt không hợp lệ!")
 
 @dp.message(Command("set_hu"))
 async def cmd_admin_set_hu(message: types.Message):
@@ -493,7 +478,7 @@ async def process_game_callback(callback: types.CallbackQuery, state: FSMContext
         )
     elif game_code == "game_cl":
         text = (
-            "⚫️ <b>GAME CHĂN LẺ</b>\n\n"
+            "⚫️ <b>GAME CHẮN LẺ</b>\n\n"
             "📌 <b>Hướng dẫn chơi:</b> Tham gia vào nhóm chat để đặt cược cùng mọi người.\n"
             "• Đặt Chẵn: <code>/C [số tiền]</code>\n"
             "• Đặt Lẻ: <code>/L [số tiền]</code>\n\n"
@@ -528,7 +513,7 @@ async def process_game_callback(callback: types.CallbackQuery, state: FSMContext
         )
     elif game_code == "game_bw":
         text = (
-            " bowling CHĂN LẺ</b>\n\n"
+            "🎳 <b>BOWLING CHẮN LẺ</b>\n\n"
             "<b>Hướng dẫn chơi:</b>\n"
             "• Ném bóng đổ 2,4,6 chai là <b>CHẲN</b>\n"
             "• Ném bóng đổ 1,3,5 chai là <b>LẺ</b>\n"
@@ -763,7 +748,6 @@ async def process_nap_amount(message: types.Message, amount: int, state: FSMCont
 
     qr_url = f"https://img.vietqr.io/image/ACB-27673211-compact.png?amount={amount}&addInfo={content_nap}&accountName=KHONG%20QUOC%20BAO"
 
-    
     try:
         await message.answer_photo(photo=qr_url, caption=qr_caption)
     except Exception:
@@ -779,7 +763,7 @@ async def process_nap_amount(message: types.Message, amount: int, state: FSMCont
 
     try:
         admin_notice = (
-            f"📥 <b>YÊU CẦU NẠP TIỀN MỚI DẦN DỰYỆT</b>\n\n"
+            f"📥 <b>YÊU CẦU NẠP TIỀN MỚI CẦN DUYỆT</b>\n\n"
             f"👤 Khách hàng: <b>{name}</b> ({username})\n"
             f"🆔 ID: <code>{user_id}</code>\n"
             f"💵 Số tiền nạp: <b>{amount:,.0f} VND</b>\n"
@@ -835,7 +819,6 @@ async def process_nap_callback(callback: types.CallbackQuery):
         except Exception:
             pass
 
-        # Bổ sung thông báo nạp thành công lên nhóm chat
         if GROUP_CHAT_ID:
             try:
                 await bot.send_message(
@@ -898,7 +881,6 @@ async def cmd_rut(message: types.Message):
     user["history_rut"].append(f"Rút {amount:,.0f} VND -> STK: {stk} ({bank})")
     await message.reply(f"✅ Đã tạo lệnh rút <b>{amount:,.0f} VND</b> về TK <code>{stk} ({bank})</code> thành công!")
 
-    # Bổ sung bàn phím duyệt rút tiền cho Admin và thông báo tự động
     admin_kb = InlineKeyboardMarkup(inline_keyboard=[
         [
             InlineKeyboardButton(text="✅ Duyệt Rút", callback_data=f"rut_approve_{user_id}_{amount}"),
@@ -1035,12 +1017,12 @@ async def cmd_code(message: types.Message):
     
     if gift.get("expire_at") and datetime.now() > gift["expire_at"]:
         del active_codes[code]
-        await message.reply("❌ Mã Giftcode này đã quá thời gian sử dụng (3 phút)!")
+        await message.reply("❌ Mã Giftcode này đã quá thời gian sử dụng!")
         return
 
     if gift["uses"] <= 0:
         del active_codes[code]
-        await message.reply("❌ Mã Giftcode này đã được sử dụng!")
+        await message.reply("❌ Mã Giftcode này đã được sử dụng hết lượt!")
         return
 
     user["balance"] += gift["amount"]
@@ -1075,11 +1057,9 @@ async def cmd_game_aviator_bay(message: types.Message):
         await message.reply("⚠️ Bạn đang có một phiên bay đang diễn ra, vui lòng chờ phiên kết thúc!")
         return
 
-    # Trừ tiền & Khóa cược
     user["balance"] -= amount
     user["total_cuoc"] += amount
 
-    # Xác định lượt cược của khách (1 - 13)
     turn = aviator_user_turn.get(user_id, 1)
     if turn == 1:
         target_x = round(random.uniform(0.0, 1.85), 2)
@@ -1101,22 +1081,15 @@ async def cmd_game_aviator_bay(message: types.Message):
         target_x = round(random.uniform(0.0, 0.6), 2)
     elif turn == 10:
         target_x = round(random.uniform(0.0, 0.6), 2)
-    elif turn == 11:
-        target_x = 0.0
-    elif turn == 12:
+    elif turn in [11, 12]:
         target_x = 0.0
     elif turn == 13:
         target_x = round(random.uniform(0.0, 15.0), 2)
     else:
         target_x = round(random.uniform(0.0, 1.85), 2)
 
-    # Cập nhật lượt tiếp theo
-    if turn >= 13:
-        aviator_user_turn[user_id] = 1
-    else:
-        aviator_user_turn[user_id] = turn + 1
+    aviator_user_turn[user_id] = 1 if turn >= 13 else turn + 1
 
-    # Tung icon máy bay và gửi tin nhắn bắt đầu bay
     await bot.send_message(message.chat.id, "🛩️")
     await message.reply("🚀 Máy bay bắt đầu cất cánh! Chúc bạn may mắn!")
 
@@ -1126,13 +1099,12 @@ async def cmd_game_aviator_bay(message: types.Message):
 
     status_msg = await bot.send_message(
         message.chat.id,
-        f"🛩️ <b>MÁY BAY DANG BAY...</b>\n\n"
+        f"🛩️ <b>MÁY BAY ĐANG BAY...</b>\n\n"
         f"💰 Số tiền cược: <b>{amount:,.0f} VND</b>\n"
         f"📈 Hệ số x hiện tại: <b>x0.00</b>",
         reply_markup=stop_kb
     )
 
-    # Thông báo cho Admin
     admin_kb = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="💥 NỔ MÁY BAY", callback_data=f"aviator_explode_{user_id}")]
     ])
@@ -1197,6 +1169,8 @@ async def run_aviator_flight(user_id: int):
                      f"📈 Hệ số x hiện tại: <b>x{curr_x:.2f}</b>",
                 reply_markup=stop_kb
             )
+        except TelegramRetryAfter as e:
+            await asyncio.sleep(e.retry_after)
         except Exception:
             pass
 
@@ -1219,11 +1193,9 @@ async def run_aviator_flight(user_id: int):
                 pass
 
     if game["stopped"]:
-        # Khách đã dừng bay thành công
         game["active"] = False
         return
 
-    # Nếu máy bay nổ hoặc chạy hết đến target_x mà khách chưa ấn nút
     game["active"] = False
     
     if user_id not in aviator_history:
@@ -1344,8 +1316,7 @@ async def catch_all_messages(message: types.Message):
         if GROUP_CHAT_ID != message.chat.id:
             GROUP_CHAT_ID = message.chat.id
             
-        # Bổ sung xử lý cược ẩn danh trong nhóm chat: /tt, /xx, /cc, /ll
-        if text.startswith(("/tai", "/xiu", "/c", "/l", "/chan", "/le", "/tt", "/xx", "/cc", "/ll")):
+        if text.startswith(("/tai", "/xiu", "/c", "/l", "/tt", "/xx", "/cc", "/ll")):
             if len(parts) >= 2 and parts[1].isdigit():
                 cmd = parts[0].replace("/", "")
                 amount = float(parts[1])
@@ -1361,7 +1332,7 @@ async def catch_all_messages(message: types.Message):
                     bet_type = "tai"
                 elif cmd in ["xiu", "xx"]:
                     bet_type = "xiu"
-                elif cmd in ["chan", "c", "cc"]:
+                elif cmd in ["c", "cc"]:
                     bet_type = "chan"
                 else:
                     bet_type = "le"
@@ -1375,7 +1346,6 @@ async def catch_all_messages(message: types.Message):
                     "anonymous": is_anonymous
                 }
 
-                # Bổ sung thông báo tự động cho Admin khi khách cược to trên 100,000đ
                 if amount > 100000:
                     try:
                         admin_alert = (
@@ -1402,7 +1372,7 @@ async def catch_all_messages(message: types.Message):
                     )
                 else:
                     await message.reply(f"✅ <b>{name}</b> cược <b>{amount:,.0f} VND</b> vào <b>{bet_type.upper()}</b>!")
-        return
+            return
 
     # GAME BỎNG NGÔ
     if text.startswith("/ngo") or text.startswith("ngo"):
@@ -1520,22 +1490,11 @@ async def catch_all_messages(message: types.Message):
             user["balance"] -= amount
             user["total_cuoc"] += amount
 
-            dice_msg = await bot.send_dice(chat_id=message.chat.id, emoji="🎳")
+            dice_msg = await bot.send_dice(chat_id=message.chat.id, emoji="Bowling")
             await asyncio.sleep(3.5)
             val = dice_msg.dice.value
 
-            if val == 6:
-                pins = 6
-            elif val == 5:
-                pins = 5
-            elif val == 4:
-                pins = 4
-            elif val == 3:
-                pins = 3
-            elif val == 2:
-                pins = 2
-            else:
-                pins = 0
+            pins = val if val in [2, 3, 4, 5, 6] else 0
 
             if pins == 0:
                 res_text = (
@@ -1546,7 +1505,7 @@ async def catch_all_messages(message: types.Message):
                 )
             else:
                 is_even = (pins % 2 == 0)
-                win = (bet_choice in ["chan", "c"] and is_even) or (bet_choice in ["le", "l"] and not is_even)
+                win = (bet_choice == "chan" and is_even) or (bet_choice == "le" and not is_even)
 
                 if win:
                     win_amt = amount * 1.90
@@ -1857,7 +1816,7 @@ async def catch_all_messages(message: types.Message):
             f"🎲 <b>KẾT QUẢ BẦU CUA:</b>\n"
             f"🎲 Kết quả xúc xắc: <b>{bc_names[dice1]} | {bc_names[dice2]} | {bc_names[dice3]}</b>\n\n"
             f"<b>Chi tiết đặt cược:</b>\n" + "\n".join(details) + "\n\n"
-            f"💰 Tong thắng: <b>+{total_win:,.0f} VND</b>\n"
+            f"💰 Tổng thắng: <b>+{total_win:,.0f} VND</b>\n"
             f"💵 Số dư hiện tại: <b>{user['balance']:,.0f} VND</b>"
         )
         await message.reply(res_text)
@@ -1866,7 +1825,7 @@ async def catch_all_messages(message: types.Message):
 # --- HÀM MAIN VÀ KHỞI CHẠY BOT ---
 async def main():
     await set_bot_commands(bot)
-    logging.info("Bot BTV88 Club đã khởi chạy thành công!")
+    logging.info("Bot BTV88 Club đã sẵn sàng hoạt động...")
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
