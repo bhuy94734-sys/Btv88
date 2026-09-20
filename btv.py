@@ -51,22 +51,17 @@ promo_config = {"percent": 0.0, "expire_at": None}
 # Biến bổ sung cho tính năng mới
 force_result = None  # Cờ ép kết quả: 'tai' hoặc 'xiu'
 
-# Biến bổ sung cho game Máy Bay Aviator
-aviator_games = {}
-
 users_db = {
     ADMIN_ID: {
         "balance": 50000000.0, 
-        "name": "Miutea88", 
+        "name": "Admin Tổng", 
         "total_nap": 10000000.0, 
         "total_cuoc": 5000000.0,
         "history_nap": [],
         "history_rut": [],
         "referrer_id": None,
         "invite_count": 0,
-        "ref_commission": 0.0,
-        "aviator_bet_count": 0,
-        "aviator_history": []
+        "ref_commission": 0.0
     }
 }
 bets_current = {} 
@@ -83,16 +78,10 @@ def get_user(user_id: int, name: str = "Thành viên", referrer_id: int = None):
             "history_rut": [],
             "referrer_id": referrer_id,
             "invite_count": 0,
-            "ref_commission": 0.0,
-            "aviator_bet_count": 0,
-            "aviator_history": []
+            "ref_commission": 0.0
         }
         if referrer_id and referrer_id in users_db and referrer_id != user_id:
             users_db[referrer_id]["invite_count"] += 1
-    if "aviator_bet_count" not in users_db[user_id]:
-        users_db[user_id]["aviator_bet_count"] = 0
-    if "aviator_history" not in users_db[user_id]:
-        users_db[user_id]["aviator_history"] = []
     return users_db[user_id]
 
 async def set_bot_commands(bot: Bot):
@@ -130,7 +119,7 @@ def get_game_list_inline_kb():
         [InlineKeyboardButton(text="Phi Tiêu 🎯", callback_data="game_pt"), InlineKeyboardButton(text="Kéo Búa Bao 🖐️✌️👊", callback_data="game_kbb")],
         [InlineKeyboardButton(text="Quay Hũ PG 🎰", callback_data="game_slot_pg"), InlineKeyboardButton(text="Cứu Thương 🚑", callback_data="game_cuu_thuong")],
         [InlineKeyboardButton(text="Đèn Đỏ Đèn Xanh🚙", callback_data="game_den_do_den_xanh"), InlineKeyboardButton(text="Rót Rượu 🍷", callback_data="game_rot_ruou")],
-        [InlineKeyboardButton(text="Bầu Cua 🦀", callback_data="game_bau_cua"), InlineKeyboardButton(text="Máy Bay Avitor🛩️", callback_data="game_aviator")],
+        [InlineKeyboardButton(text="Bầu Cua 🦀", callback_data="game_bau_cua")],
         [InlineKeyboardButton(text="❌ Đóng Menu", callback_data="game_close")]
     ])
     return keyboard
@@ -339,13 +328,13 @@ async def cmd_admin_tru(message: types.Message):
     except ValueError:
         await message.reply("❌ ID hoặc số tiền không hợp lệ!")
 
-@dp.message(Command("tao_code_legacy"))
+@dp.message(Command("tao_code"))
 async def cmd_admin_tao_code(message: types.Message):
     if message.from_user.id != ADMIN_ID:
         return
     args = message.text.split()
     if len(args) < 4:
-        await message.reply("⚠️ Cú pháp: <code>/tao_code_legacy [Mã_Code] [Số_tiền] [Số_lượt]</code>")
+        await message.reply("⚠️ Cú pháp: <code>/tao_code [Mã_Code] [Số_tiền] [Số_lượt]</code>")
         return
     code = args[1].upper()
     try:
@@ -404,8 +393,7 @@ async def cmd_user_lenh(message: types.Message):
         f"• Cứu thương: <code>/cuu (số tiền)</code>\n"
         f"• Đèn đỏ đèn xanh: <code>/vuot (số tiền)</code>\n"
         f"• Rót rượu: <code>/rot (số tiền)</code>\n"
-        f"• Bầu cua: <code>[Cửa1] [Cửa2] [Cửa3] (số tiền)</code>\n"
-        f"• Máy Bay Aviator: <code>/Bay (số tiền cược)</code>"
+        f"• Bầu cua: <code>[Cửa1] [Cửa2] [Cửa3] (số tiền)</code>"
     )
     await message.answer(text)
 
@@ -499,7 +487,7 @@ async def process_game_callback(callback: types.CallbackQuery, state: FSMContext
         )
     elif game_code == "game_cl":
         text = (
-            "⚫️ <b>GAME CHẮN LẺ</b>\n\n"
+            "⚫️ <b>GAME CHĂN LẺ</b>\n\n"
             "📌 <b>Hướng dẫn chơi:</b> Tham gia vào nhóm chat để đặt cược cùng mọi người.\n"
             "• Đặt Chẵn: <code>/C [số tiền]</code>\n"
             "• Đặt Lẻ: <code>/L [số tiền]</code>\n\n"
@@ -534,7 +522,7 @@ async def process_game_callback(callback: types.CallbackQuery, state: FSMContext
         )
     elif game_code == "game_bw":
         text = (
-            "🎳 <b>BOWLING CHẮN LẺ</b>\n\n"
+            " bowling CHĂN LẺ</b>\n\n"
             "<b>Hướng dẫn chơi:</b>\n"
             "• Ném bóng đổ 2,4,6 chai là <b>CHẲN</b>\n"
             "• Ném bóng đổ 1,3,5 chai là <b>LẺ</b>\n"
@@ -631,19 +619,6 @@ async def process_game_callback(callback: types.CallbackQuery, state: FSMContext
             "👉 Tối thiểu là 2.000 và tối đa là 300.000\n\n"
             "👉 Cách chơi: [cửa 1] [cửa 2] [cửa 3] [tiền cược]\n"
             "VD: <code>BAU CUA CA 5000</code> hoặc <code>CUA 10000</code>"
-        )
-    elif game_code == "game_aviator":
-        user = get_user(callback.from_user.id, callback.from_user.full_name)
-        history_str = "Chưa có dữ liệu"
-        if user["aviator_history"]:
-            history_str = "\n".join([f"• Phiên {item['session']}: Cược {item['bet']:,.0f}đ - Hệ số x{item['target_x']:.2f} - Kết quả: {item['result']}" for item in user["aviator_history"][-5:]])
-        text = (
-            "🛩️ <b>MÁY BAY AVIATOR</b> 🛩️\n\n"
-            "<b>Mô tả game:</b>\n"
-            "Máy Bay ✈️ - Bay càng cao X càng lớn ✅\n\n"
-            "📊 <b>Thống kê các phiên bay & hệ số bay đã từng đặt cược:</b>\n"
-            f"{history_str}\n\n"
-            "📌 <b>Lệnh đặt cược:</b> <code>/Bay (số tiền cược)</code>"
         )
     else:
         text = "Mục game đang cập nhật!"
@@ -1059,187 +1034,6 @@ async def cmd_code(message: types.Message):
 
     await message.reply(f"🎁 Bạn nhận được <b>{gift['amount']:,.0f} VND</b> từ Giftcode <code>{code}</code>!")
 
-# --- XỬ LÝ GAME MÁY BAY AVIATOR 🛩️ ---
-@dp.message(Command("Bay"))
-async def cmd_bay_aviator(message: types.Message):
-    user_id = message.from_user.id
-    name = message.from_user.full_name
-    user = get_user(user_id, name)
-    args = message.text.split()
-
-    if user_id in aviator_games and aviator_games[user_id].get("running", False):
-        await message.reply("⚠️ Bạn đang có một phiên bay đang diễn ra! Vui lòng hoàn tất phiên hiện tại.")
-        return
-
-    if len(args) < 2 or not args[1].replace(".", "").isdigit():
-        await message.reply("⚠️ Cú pháp cược: <code>/Bay (số tiền cược)</code>")
-        return
-
-    bet_amount = float(args[1])
-    if bet_amount <= 0:
-        await message.reply("⚠️ Số tiền cược phải lớn hơn 0!")
-        return
-
-    if user["balance"] < bet_amount:
-        await message.reply(f"❌ Số dư không đủ! Số dư hiện tại: {user['balance']:,.0f} VND.")
-        return
-
-    # Trừ tiền & khoá cược
-    user["balance"] -= bet_amount
-    user["total_cuoc"] += bet_amount
-    user["aviator_bet_count"] += 1
-    count = user["aviator_bet_count"]
-
-    # Xác định tỷ lệ random hệ số theo lần cược
-    if count == 1:
-        target_x = round(random.uniform(0.0, 1.85), 2)
-    elif count == 2:
-        target_x = round(random.uniform(0.0, 0.3), 2)
-    elif count == 3:
-        target_x = round(random.uniform(0.0, 0.8), 2)
-    elif count == 4:
-        target_x = round(random.uniform(0.0, 1.2), 2)
-    elif count == 5:
-        target_x = round(random.uniform(0.0, 0.6), 2)
-    elif count == 6:
-        target_x = round(random.uniform(0.0, 2.5), 2)
-    elif count == 7:
-        target_x = round(random.uniform(0.0, 0.6), 2)
-    elif count == 8:
-        target_x = round(random.uniform(0.0, 2.7), 2)
-    elif count == 9:
-        target_x = round(random.uniform(0.0, 0.6), 2)
-    elif count == 10:
-        target_x = round(random.uniform(0.0, 0.6), 2)
-    elif count == 11:
-        target_x = 0.0
-    elif count == 12:
-        target_x = 0.0
-    elif count == 13:
-        target_x = round(random.uniform(0.0, 15.0), 2)
-        user["aviator_bet_count"] = 0  # Quay lại từ đầu sau lần 13
-    else:
-        target_x = round(random.uniform(0.0, 1.85), 2)
-
-    # Tung icon máy bay & thông báo bắt đầu bay
-    await message.reply("✈️")
-    start_msg = await message.reply(f"🚀 <b>MÁY BAY BẮT ĐẦU BAY!</b> 🚀\n💰 Số tiền cược: <b>{bet_amount:,.0f} VND</b>\n🔒 Đã khoá cược thành công!")
-
-    stop_kb = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="🛑 DỪNG BAY", callback_data=f"aviator_stop_{user_id}")]
-    ])
-
-    flight_msg = await message.reply(f"🛩️ <b>Hệ số hiện tại:</b> x0.00", reply_markup=stop_kb)
-
-    aviator_games[user_id] = {
-        "running": True,
-        "bet": bet_amount,
-        "target_x": target_x,
-        "current_x": 0.0,
-        "stopped": False,
-        "flight_msg_id": flight_msg.message_id,
-        "chat_id": message.chat.id
-    }
-
-    asyncio.create_task(run_aviator_flight(user_id, bet_amount, target_x, flight_msg.message_id, message.chat.id))
-
-async def run_aviator_flight(user_id: int, bet_amount: float, target_x: float, msg_id: int, chat_id: int):
-    user = get_user(user_id)
-    game_data = aviator_games.get(user_id)
-    if not game_data:
-        return
-
-    current_x = 0.0
-    step = 0.10 if target_x > 2.0 else 0.05
-    
-    while current_x < target_x and game_data["running"] and not game_data["stopped"]:
-        await asyncio.sleep(0.8)
-        current_x = round(current_x + step, 2)
-        if current_x > target_x:
-            current_x = target_x
-        game_data["current_x"] = current_x
-
-        if game_data["stopped"]:
-            break
-
-        stop_kb = InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text=f"🛑 DỪNG BAY (x{current_x:.2f})", callback_data=f"aviator_stop_{user_id}")]
-        ])
-        try:
-            await bot.edit_message_text(
-                chat_id=chat_id,
-                message_id=msg_id,
-                text=f"💰 <b>Số tiền cược:</b> <b>{bet_amount:,.0f} VND</b>\n🛩️ <b>Máy bay đang bay:</b> x{current_x:.2f}",
-                reply_markup=stop_kb
-            )
-        except Exception:
-            pass
-
-    # Kết thúc phiên bay
-    if game_data["running"] and not game_data["stopped"]:
-        game_data["running"] = False
-        user["aviator_history"].append({
-            "session": len(user["aviator_history"]) + 1,
-            "bet": bet_amount,
-            "target_x": target_x,
-            "result": "THUA 💥"
-        })
-        try:
-            await bot.edit_message_text(
-                chat_id=chat_id,
-                message_id=msg_id,
-                text=f"💥 <b>MÁY BAY ĐÃ NỔ / DỪNG BAY!</b> 💥\n\n"
-                     f"❌ Bạn chưa kịp nhấn nút Dừng Bay trước khi máy bay dừng!\n"
-                     f"📊 Hệ số phiên: <b>x{target_x:.2f}</b>\n"
-                     f"💸 Bạn đã THUA <b>-{bet_amount:,.0f} VND</b>\n"
-                     f"💰 Số dư còn lại: <b>{user['balance']:,.0f} VND</b>"
-            )
-        except Exception:
-            pass
-
-@dp.callback_query(F.data.startswith("aviator_stop_"))
-async def process_aviator_stop(callback: types.CallbackQuery):
-    target_user_id = int(callback.data.split("_")[2])
-    if callback.from_user.id != target_user_id:
-        await callback.answer("⚠️ Đây không phải phiên bay của bạn!", show_alert=True)
-        return
-
-    game_data = aviator_games.get(target_user_id)
-    if not game_data or not game_data["running"] or game_data["stopped"]:
-        await callback.answer("⚠️ Phiên bay đã kết thúc!", show_alert=True)
-        return
-
-    game_data["stopped"] = True
-    game_data["running"] = False
-    
-    stop_x = game_data["current_x"]
-    bet_amount = game_data["bet"]
-    win_amt = bet_amount * stop_x
-
-    user = get_user(target_user_id)
-    user["balance"] += win_amt
-
-    user["aviator_history"].append({
-        "session": len(user["aviator_history"]) + 1,
-        "bet": bet_amount,
-        "target_x": stop_x,
-        "result": f"THẮNG +{win_amt:,.0f}đ (x{stop_x:.2f})"
-    })
-
-    await callback.answer(f"🎉 Bạn đã chốt hạ x{stop_x:.2f}!")
-
-    try:
-        await bot.edit_message_text(
-            chat_id=game_data["chat_id"],
-            message_id=game_data["flight_msg_id"],
-            text=f"🎉 <b>BẠN ĐÃ DỪNG BAY THÀNH CÔNG!</b> 🎉\n\n"
-                 f"🛩️ Hệ số chốt: <b>x{stop_x:.2f}</b>\n"
-                 f"💰 Số tiền thưởng: <b>+{win_amt:,.0f} VND</b>\n"
-                 f"💵 Số dư hiện tại: <b>{user['balance']:,.0f} VND</b>"
-        )
-    except Exception:
-        pass
-
 # --- XỬ LÝ CÁC GAME TRONG NHÓM & MINI GAME CÁ NHÂN ---
 @dp.message()
 async def catch_all_messages(message: types.Message):
@@ -1418,7 +1212,7 @@ async def catch_all_messages(message: types.Message):
             await message.reply("⚠️ Cú pháp: <code>/BD [số tiền cược]</code>")
         return
 
-    # GAME BOWLING (FIXED CRASH)
+    # GAME BOWLING
     if text.startswith(("/chan", "/le")):
         if len(parts) >= 2 and parts[1].isdigit():
             bet_choice = parts[0].replace("/", "")
@@ -1433,7 +1227,7 @@ async def catch_all_messages(message: types.Message):
             user["balance"] -= amount
             user["total_cuoc"] += amount
 
-            dice_msg = await bot.send_dice(chat_id=message.chat.id, emoji="🎳")
+            dice_msg = await bot.send_dice(chat_id=message.chat.id, emoji="Bowling")
             await asyncio.sleep(3.5)
             pins = dice_msg.dice.value
             
@@ -1780,97 +1574,241 @@ async def game_loop():
             bets_current.clear()
             await unlock_chat(GROUP_CHAT_ID)
             
-            tx_display = "".join([f"[{x}]" for x in recent_tai_xiu[-10:]])
-            cl_display = "".join([f"[{x}]" for x in recent_chan_le[-10:]])
+            tx_display = " ".join(["🔵" if x == 'T' else "🔴" for x in recent_tai_xiu[-12:]])
+            cl_display = " ".join(["⚪" if x == 'C' else "⚫" for x in recent_chan_le[-12:]])
             
-            start_msg = (
-                f"🎲 <b>BẮT ĐẦU PHIÊN #{current_session}</b> 🎲\n\n"
-                f"📊 <b>Cầu Tài Xỉu gần đây:</b> {tx_display}\n"
-                f"📊 <b>Cầu Chẵn Lẻ gần đây:</b> {cl_display}\n"
-                f"🏺 <b>Hũ Jackpot:</b> <b>{current_jackpot:,.0f} VND</b>\n\n"
-                f"⏰ <b>Thời gian đặt cược:</b> 45 GIÂY!\n"
-                f"👉 Đặt Tài: <code>/Tai 10000</code> | Đặt Xỉu: <code>/Xiu 10000</code>\n"
-                f"👉 Đặt Chẵn: <code>/C 10000</code> | Đặt Lẻ: <code>/L 10000</code>"
+            start_text = (
+                f"🟢 <b>BẮT ĐẦU PHIÊN MỚI (#{current_session})</b>\n\n"
+                f"⏳ <b>Thời gian đặt cược: 40 giây</b>\n"
+                f"💰 <b>Hũ Jackpot: {current_jackpot:,.0f} VND</b>\n\n"
+                f"📊 <b>THỐNG KÊ 12 PHIÊN GẦN NHẤT:</b>\n"
+                f"• Tài / Xỉu: {tx_display}\n"
+                f"• Chẵn / Lẻ: {cl_display}\n\n"
+                f"👉 <b>CÚ PHÁP ĐẶT CƯỢC:</b>\n"
+                f"<b>Cược công khai:</b>\n"
+                f"Lệnh cược Tài: <code>/Tai (số tiền cược)</code>\n"
+                f"Lệnh cược Xỉu: <code>/Xiu (số tiền cược)</code>\n"
+                f"Lệnh cược Chẵn: <code>/C (số tiền cược)</code>\n"
+                f"Lệnh cược Lẻ: <code>/L (số tiền cược)</code>\n"
+                f"<b>Cược ẩn danh:</b>\n"
+                f"Lệnh cược Tài ẩn danh: <code>/TT (số tiền cược)</code>\n"
+                f"Lệnh cược Xỉu ẩn danh: <code>/XX (số tiền cược)</code>\n"
+                f"Lệnh cược Chẵn ẩn danh: <code>/CC (số tiền cược)</code>\n"
+                f"Lệnh cược Lẻ ẩn danh: <code>/LL (số tiền cược)</code>"
             )
-            await bot.send_message(GROUP_CHAT_ID, start_msg)
             
-            await asyncio.sleep(30)
+            session_msg = await bot.send_message(GROUP_CHAT_ID, start_text)
             
-            await bot.send_message(GROUP_CHAT_ID, f"⚠️ <b>CẢNH BÁO:</b> Chỉ còn <b>15 GIÂY</b> để đặt cược phiên #{current_session}!")
-            await asyncio.sleep(15)
+            # Cập nhật thông báo mỗi 5s bổ sung thống kê Chẵn/Lẻ
+            for remaining in range(35, 0, -5):
+                await asyncio.sleep(5)
+                total_t = sum(b["amount"] for b in bets_current.values() if b["type"] == "tai")
+                total_x = sum(b["amount"] for b in bets_current.values() if b["type"] == "xiu")
+                total_c = sum(b["amount"] for b in bets_current.values() if b["type"] == "chan")
+                total_l = sum(b["amount"] for b in bets_current.values() if b["type"] == "le")
+
+                tx_disp_live = " ".join(["🔵" if x == 'T' else "🔴" for x in recent_tai_xiu[-12:]])
+                cl_disp_live = " ".join(["⚪" if x == 'C' else "⚫" for x in recent_chan_le[-12:]])
+
+                update_text = (
+                    f"🟢 <b>PHIÊN (#{current_session}) - ĐANG NHẬN CƯỢC</b>\n\n"
+                    f"⏳ Còn lại: <b>{remaining} giây</b>\n"
+                    f"💰 Tài: <b>{total_t:,.0f}</b> | Xỉu: <b>{total_x:,.0f}</b>\n"
+                    f"⚪ Chẵn: <b>{total_c:,.0f}</b> | Lẻ: <b>{total_l:,.0f}</b>\n"
+                    f"💎 Hũ: <b>{current_jackpot:,.0f} VND</b>\n\n"
+                    f"📊 <b>CẦU 12 PHIÊN GẦN NHẤT:</b>\n"
+                    f"• T/X: {tx_disp_live}\n"
+                    f"• C/L: {cl_disp_live}\n\n"
+                    f"👉 <b>CÚ PHÁP ĐẶT CƯỢC:</b>\n"
+                    f"<b>Cược công khai:</b>\n"
+                    f"Lệnh cược Tài: <code>/Tai (số tiền cược)</code>\n"
+                    f"Lệnh cược Xỉu: <code>/Xiu (số tiền cược)</code>\n"
+                    f"Lệnh cược Chẵn: <code>/C (số tiền cược)</code>\n"
+                    f"Lệnh cược Lẻ: <code>/L (số tiền cược)</code>\n"
+                    f"<b>Cược ẩn danh:</b>\n"
+                    f"Lệnh cược Tài ẩn danh: <code>/TT (số tiền cược)</code>\n"
+                    f"Lệnh cược Xỉu ẩn danh: <code>/XX (số tiền cược)</code>\n"
+                    f"Lệnh cược Chẵn ẩn danh: <code>/CC (số tiền cược)</code>\n"
+                    f"Lệnh cược Lẻ ẩn danh: <code>/LL (số tiền cược)</code>"
+                )
+                try:
+                    await session_msg.edit_text(update_text)
+                except Exception:
+                    pass
+                    
+            await asyncio.sleep(5)
             
             await lock_chat(GROUP_CHAT_ID)
-            await bot.send_message(GROUP_CHAT_ID, f"🔒 <b>HẾT GIỜ ĐẶT CƯỢC PHIÊN #{current_session}!</b> Đang tung xúc xắc...")
-            
-            dice_msg = await bot.send_dice(chat_id=GROUP_CHAT_ID, emoji="🎲")
-            await asyncio.sleep(3)
-            
-            dice_val = dice_msg.dice.value
-            
-            if force_result == "tai":
-                d1, d2, d3 = 4, 5, 5
-                force_result = None
-            elif force_result == "xiu":
-                d1, d2, d3 = 1, 2, 2
-                force_result = None
-            else:
-                d1 = random.randint(1, 6)
-                d2 = random.randint(1, 6)
-                d3 = random.randint(1, 6)
+            try:
+                await session_msg.edit_text(f"🔒 <b>PHIÊN (#{current_session}) ĐÃ ĐÓNG CƯỢC. ĐANG QUAY THƯỞNG...</b>")
+            except Exception:
+                pass
                 
-            total_point = d1 + d2 + d3
-            res_tx = "TAI" if total_point >= 11 else "XIU"
-            res_cl = "CHAN" if total_point % 2 == 0 else "LE"
+            await asyncio.sleep(1)
             
-            recent_tai_xiu.append(res_tx[0])
-            recent_chan_le.append(res_cl[0])
+            # Xử lý Tung Xúc Xắc (Bổ sung tính năng Ép Kết Quả /kq)
+            while True:
+                d1_msg = await bot.send_dice(GROUP_CHAT_ID, emoji="🎲")
+                await asyncio.sleep(1)
+                d2_msg = await bot.send_dice(GROUP_CHAT_ID, emoji="🎲")
+                await asyncio.sleep(1)
+                d3_msg = await bot.send_dice(GROUP_CHAT_ID, emoji="🎲")
+                await asyncio.sleep(2)
+
+                d1 = d1_msg.dice.value
+                d2 = d2_msg.dice.value
+                d3 = d3_msg.dice.value
+                temp_pts = d1 + d2 + d3
+
+                if force_result == "tai" and temp_pts < 11:
+                    try:
+                        await bot.delete_message(GROUP_CHAT_ID, d1_msg.message_id)
+                        await bot.delete_message(GROUP_CHAT_ID, d2_msg.message_id)
+                        await bot.delete_message(GROUP_CHAT_ID, d3_msg.message_id)
+                    except Exception:
+                        pass
+                    continue
+                elif force_result == "xiu" and temp_pts > 10:
+                    try:
+                        await bot.delete_message(GROUP_CHAT_ID, d1_msg.message_id)
+                        await bot.delete_message(GROUP_CHAT_ID, d2_msg.message_id)
+                        await bot.delete_message(GROUP_CHAT_ID, d3_msg.message_id)
+                    except Exception:
+                        pass
+                    continue
+                else:
+                    force_result = None  # Reset sau khi tung đúng
+                    break
+
+            total_points = d1 + d2 + d3
+            is_tai = total_points >= 11
+            tx_result = "Tài" if is_tai else "Xỉu"
+            cl_result = "Chẵn" if total_points % 2 == 0 else "Lẻ"
             
-            current_jackpot += 5000.0
+            recent_tai_xiu.append('T' if is_tai else 'X')
+            recent_chan_le.append('C' if total_points % 2 == 0 else 'L')
             
-            win_text = f"🎲 <b>KẾT QUẢ PHIÊN #{current_session}</b> 🎲\n\n"
-            win_text += f"🎲 Xúc xắc: <b>{d1} - {d2} - {d3}</b> (Tổng: <b>{total_point} điểm</b>)\n"
-            win_text += f"🎯 Kết quả: <b>{res_tx}</b> | <b>{res_cl}</b>\n\n"
-            win_text += f"🏆 <b>DANH SÁCH THẮNG CƯỢC:</b>\n"
+            # Bổ sung cơ chế Nổ Hũ 3,3,3 (3 điểm) hoặc 6,6,6 (18 điểm)
+            is_jackpot = False
+            jackpot_winners = {}
+            if (d1, d2, d3) == (6, 6, 6) or (d1, d2, d3) == (1, 1, 1):
+                is_jackpot = True
+                jp_door = "tai" if (d1, d2, d3) == (6, 6, 6) else "xiu"
+                eligible_bets = {
+                    uid: b for uid, b in bets_current.items() if b["type"] == jp_door
+                }
+                total_jp_bet = sum(b["amount"] for b in eligible_bets.values())
+
+                if total_jp_bet > 0:
+                    for uid, b in eligible_bets.items():
+                        share = (b["amount"] / total_jp_bet) * current_jackpot
+                        jackpot_winners[uid] = share
+                        get_user(uid)["balance"] += share
+                    current_jackpot = 600000.0  # Reset hũ ban đầu
+
+            total_win_money = 0
+            total_lose_money = 0
             
-            has_winner = False
-            for uid, bet_info in bets_current.items():
-                u_type = bet_info["type"]
-                u_amt = bet_info["amount"]
-                u_name = bet_info["name"]
-                is_anon = bet_info.get("anonymous", False)
-                display_name = "🥷 Người chơi ẩn danh" if is_anon else f"<b>{u_name}</b>"
+            for uid, bet in bets_current.items():
+                b_type, b_amt = bet["type"], bet["amount"]
+                user = get_user(uid)
+                won = False
+                if b_type == "tai" and is_tai: won = True
+                elif b_type == "xiu" and not is_tai: won = True
+                elif b_type == "chan" and total_points % 2 == 0: won = True
+                elif b_type == "le" and total_points % 2 != 0: won = True
                 
-                is_win = False
-                if u_type == "tai" and res_tx == "TAI": is_win = True
-                elif u_type == "xiu" and res_tx == "XIU": is_win = True
-                elif u_type == "chan" and res_cl == "CHAN": is_win = True
-                elif u_type == "le" and res_cl == "LE": is_win = True
-                
-                if is_win:
-                    has_winner = True
-                    win_money = u_amt * 1.95
-                    users_db[uid]["balance"] += win_money
-                    win_text += f"• {display_name}: +<b>{win_money:,.0f} VND</b> ({u_type.upper()})\n"
+                if won:
+                    # Bổ sung tỉ lệ trả thưởng cược ẩn danh x1.90, cược thường x1.95 (lời 0.95)
+                    rate = 0.90 if bet.get("anonymous") else 0.95
+                    payout = b_amt * rate
+                    win_total = payout + b_amt
+                    user["balance"] += win_total
+                    total_win_money += payout
                     
-            if not has_winner:
-                win_text += "• Không có người chơi nào thắng cược phiên này.\n"
-                
-            await bot.send_message(GROUP_CHAT_ID, win_text)
+                    try:
+                        pm_win = (
+                            f"🎉 <b>THÔNG BÁO THẮNG CƯỢC PHIÊN #{current_session}</b> 🎉\n\n"
+                            f"🎲 Kết quả: <b>{d1}-{d2}-{d3}</b> ({total_points} điểm - {tx_result})\n"
+                            f"🎯 Bạn chọn: <b>{b_type.upper()}</b> {'(Ẩn danh)' if bet.get('anonymous') else ''}\n"
+                            f"💰 Tiền cược: <b>{b_amt:,.0f} VND</b>\n"
+                            f"💵 Số tiền thưởng nhận được: <b>+{payout:,.0f} VND</b>\n"
+                            f"💳 Số dư hiện tại: <b>{user['balance']:,.0f} VND</b>"
+                        )
+                        await bot.send_message(uid, pm_win)
+                    except Exception:
+                        pass
+                else:
+                    total_lose_money += b_amt
+                    try:
+                        pm_lose = (
+                            f"❌ <b>THÔNG BÁO KẾT QUẢ PHIÊN #{current_session}</b> ❌\n\n"
+                            f"🎲 Kết quả: <b>{d1}-{d2}-{d3}</b> ({total_points} điểm - {tx_result})\n"
+                            f"🎯 Bạn chọn: <b>{b_type.upper()}</b> {'(Ẩn danh)' if bet.get('anonymous') else ''}\n"
+                            f"💸 Số tiền đã thua: <b>-{b_amt:,.0f} VND</b>\n"
+                            f"💳 Số dư còn lại: <b>{user['balance']:,.0f} VND</b>"
+                        )
+                        await bot.send_message(uid, pm_lose)
+                    except Exception:
+                        pass
+                    
+            if not is_jackpot:
+                current_jackpot += total_lose_money * 0.01
             
+            tx_display_res = " ".join(["🔵" if x == 'T' else "🔴" for x in recent_tai_xiu[-12:]])
+            cl_display_res = " ".join(["⚪" if x == 'C' else "⚫" for x in recent_chan_le[-12:]])
+            
+            result_text = (
+                f"🔒 <b>KẾT QUẢ PHIÊN (#{current_session})</b>\n\n"
+                f"🎲 Xúc xắc: <b>{d1} - {d2} - {d3}</b> ➔ <b>{total_points} điểm</b> ➔ <b>{tx_result} | {cl_result}</b>\n\n"
+                f"| 💰 TỔNG THẮNG: {total_win_money:,.0f} VND\n"
+                f"| 💸 TỔNG THUA: {total_lose_money:,.0f} VND\n"
+                f"| 🏺 HŨ HIỆN TẠI: {current_jackpot:,.0f} VND\n\n"
+                f"📊 <b>THỐNG KÊ TÀI XỈU:</b>\n{tx_display_res}\n\n"
+                f"📊 <b>CHẴN LẺ:</b>\n{cl_display_res}"
+            )
+            
+            if is_jackpot:
+                jp_notice = f"\n\n💥 <b>NỔ HŨ JACKPOT ({'18 ĐIỂM TÀI' if total_points == 18 else '3 ĐIỂM XỈU'})!</b> 💥\n"
+                if jackpot_winners:
+                    jp_notice += "🏆 Người chơi trúng hũ:\n"
+                    for w_uid, w_amt in jackpot_winners.items():
+                        jp_notice += f"• ID <code>{w_uid}</code>: +<b>{w_amt:,.0f} VND</b>\n"
+                else:
+                    jp_notice += "⚠️ Không có người chơi đặt cược đúng cửa nổ hũ!"
+                result_text += jp_notice
+
+            await bot.send_message(GROUP_CHAT_ID, result_text)
             current_session += 1
-            await asyncio.sleep(10)
+            await asyncio.sleep(4)
             
         except Exception as e:
             logging.error(f"Lỗi game loop: {e}")
             await asyncio.sleep(5)
 
-# --- KHỞI CHẠY BOT ---
+# --- SERVER WEB UPTIME ---
+async def handle_ping(request):
+    return web.Response(text="BTV88 Bot Active", status=200)
+
 async def main():
     await set_bot_commands(bot)
+    
+    app = web.Application()
+    app.router.add_get("/", handle_ping)
+    
+    runner = web.AppRunner(app)
+    await runner.setup()
+    port = int(os.environ.get("PORT", 10000))
+    site = web.TCPSite(runner, "0.0.0.0", port)
+    await site.start()
+    
     asyncio.create_task(game_loop())
     asyncio.create_task(auto_code_loop())
-    logging.info("🚀 Bot BTV88 Club đã sẵn sàng hoạt động!")
-    await dp.start_polling(bot)
+    
+    try:
+        await dp.start_polling(bot)
+    finally:
+        await bot.session.close()
 
 if __name__ == "__main__":
     asyncio.run(main())
