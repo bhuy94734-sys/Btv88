@@ -602,10 +602,10 @@ async def process_game_callback(callback: types.CallbackQuery, state: FSMContext
             "🎲 <b>BẦU CUA</b>\n\n"
             "🍐 BẦU  - Nếu xúc xắc ra số 1\n"
             "🦐 TÔM  - Nếu xúc xắc ra số 2\n"
-            "🦀 CUA  - Если xúc xắc ra số 3\n"
+            "🦀 CUA  - Nếu xúc xắc ra số 3\n"
             "🐟 CÁ   - Nếu xúc xắc ra số 4\n"
             "🐓 GÀ   - Nếu xúc xắc ra số 5\n"
-            "🦌 NAI  - Nếu xúc xắc ra số 6\n\n"
+            "🦌 NAI  - Если xúc xắc ra số 6\n\n"
             "Tỷ lệ: ra 1 viên x1.95 | ra 2 viên x3 | ra 3 viên x4\n"
             "Đặt tối đa 3 cửa trong 1 lệnh.\n\n"
             "👉 Tối thiểu là 2.000 và tối đa là 300.000\n\n"
@@ -1300,30 +1300,75 @@ async def process_aviator_explode(callback: types.CallbackQuery):
     game["target_x"] = game["current_x"]
     await callback.answer("💥 Đã cho nổ máy bay lập tức!", show_alert=True)
 
-# --- VÒNG LẶP TỰ ĐỘNG TUNG XÚC XẮC TÀI XỈU ---
+# --- VÒNG LẶP TỰ ĐỘNG TUNG XÚC XẮC TÀI XỈU & CHẴN LẺ (CÓ ĐẾM NGƯỢC REALTIME & HŨ) ---
 async def auto_tai_xiu_loop():
-    global current_session, force_result, recent_tai_xiu, recent_chan_le, bets_current
+    global current_session, current_jackpot, force_result, recent_tai_xiu, recent_chan_le, bets_current
     while True:
-        # Chờ 45 giây cho phép người chơi đặt cược
-        await asyncio.sleep(45)
-        
         if not GROUP_CHAT_ID:
+            await asyncio.sleep(5)
             continue
 
         try:
-            # Khóa chat nhóm để chuẩn bị quay thưởng
+            total_seconds = 45
+            
+            sum_tai = sum(b["amount"] for b in bets_current.values() if b["type"] == "tai")
+            sum_xiu = sum(b["amount"] for b in bets_current.values() if b["type"] == "xiu")
+            sum_chan = sum(b["amount"] for b in bets_current.values() if b["type"] == "chan")
+            sum_le = sum(b["amount"] for b in bets_current.values() if b["type"] == "le")
+            
+            start_msg = await bot.send_message(
+                GROUP_CHAT_ID,
+                f"💎 <b>BTV88 CLUB - PHIÊN #{current_session}</b> 💎\n"
+                f"🏺 <b>Hũ Jackpot:</b> <b>{current_jackpot:,.0f} VND</b>\n\n"
+                f"⏳ <b>Thời gian đặt cược còn lại:</b> <code>{total_seconds}s</code>\n\n"
+                f"📊 <b>Thống kê cược hiện tại:</b>\n"
+                f"• Cửa TÀI: <b>{sum_tai:,.0f} VND</b> | Cửa XỈU: <b>{sum_xiu:,.0f} VND</b>\n"
+                f"• Cửa CHẴN: <b>{sum_chan:,.0f} VND</b> | Cửa LẺ: <b>{sum_le:,.0f} VND</b>\n\n"
+                f"💡 <b>Lệnh cược Tài/Xỉu:</b> <code>/Tai [tiền]</code> | <code>/Xiu [tiền]</code> (Ẩn danh: <code>/TT</code> / <code>/XX</code>)\n"
+                f"💡 <b>Lệnh cược Chẵn/Lẻ:</b> <code>/Chan [tiền]</code> | <code>/Le [tiền]</code> (Ẩn danh: <code>/CC</code> / <code>/LL</code>)"
+            )
+            
+            elapsed = 0
+            while elapsed < total_seconds:
+                await asyncio.sleep(5)
+                elapsed += 5
+                remaining = max(0, total_seconds - elapsed)
+                
+                sum_tai = sum(b["amount"] for b in bets_current.values() if b["type"] == "tai")
+                sum_xiu = sum(b["amount"] for b in bets_current.values() if b["type"] == "xiu")
+                sum_chan = sum(b["amount"] for b in bets_current.values() if b["type"] == "chan")
+                sum_le = sum(b["amount"] for b in bets_current.values() if b["type"] == "le")
+                
+                try:
+                    await bot.edit_message_text(
+                        chat_id=GROUP_CHAT_ID,
+                        message_id=start_msg.message_id,
+                        text=f"💎 <b>BTV88 CLUB - PHIÊN #{current_session}</b> 💎\n"
+                             f"🏺 <b>Hũ Jackpot:</b> <b>{current_jackpot:,.0f} VND</b>\n\n"
+                             f"⏳ <b>Thời gian đặt cược còn lại:</b> <code>{remaining}s</code>\n\n"
+                             f"📊 <b>Thống kê cược hiện tại:</b>\n"
+                             f"• Cửa TÀI: <b>{sum_tai:,.0f} VND</b> | Cửa XỈU: <b>{sum_xiu:,.0f} VND</b>\n"
+                             f"• Cửa CHẴN: <b>{sum_chan:,.0f} VND</b> | Cửa LẺ: <b>{sum_le:,.0f} VND</b>\n\n"
+                             f"💡 <b>Lệnh cược Tài/Xỉu:</b> <code>/Tai [tiền]</code> | <code>/Xiu [tiền]</code> (Ẩn danh: <code>/TT</code> / <code>/XX</code>)\n"
+                             f"💡 <b>Lệnh cược Chẵn/Lẻ:</b> <code>/Chan [tiền]</code> | <code>/Le [tiền]</code> (Ẩn danh: <code>/CC</code> / <code>/LL</code>)"
+                    )
+                except Exception:
+                    pass
+
             await lock_chat(GROUP_CHAT_ID)
             
-            # Gửi thông báo bắt đầu quay
-            await bot.send_message(
-                GROUP_CHAT_ID,
-                f"🎲 <b>PHIÊN #{current_session} ĐÃ ĐÓNG CƯỢC!</b>\n"
-                f"⏳ Đang tiến hành tung xúc xắc..."
-            )
+            try:
+                await bot.edit_message_text(
+                    chat_id=GROUP_CHAT_ID,
+                    message_id=start_msg.message_id,
+                    text=f"🔒 <b>PHIÊN #{current_session} ĐÃ ĐÓNG CƯỢC!</b>\n"
+                         f"⏳ Đang tiến hành tung xúc xắc..."
+                )
+            except Exception:
+                pass
             
             await asyncio.sleep(2)
             
-            # Gửi 3 viên xúc xắc liên tiếp
             d1_msg = await bot.send_dice(chat_id=GROUP_CHAT_ID, emoji="🎲")
             await asyncio.sleep(1)
             d2_msg = await bot.send_dice(chat_id=GROUP_CHAT_ID, emoji="🎲")
@@ -1336,45 +1381,31 @@ async def auto_tai_xiu_loop():
             v3 = d3_msg.dice.value
             total_sum = v1 + v2 + v3
             
-            # Xử lý kết quả Tài Xỉu
             if force_result:
                 tx_result = 'tai' if force_result == 'tai' else 'xiu'
                 force_result = None
             else:
                 tx_result = 'tai' if total_sum >= 11 else 'xiu'
                 
-            # Xử lý kết quả Chẵn Lẻ
             cl_result = 'chan' if total_sum % 2 == 0 else 'le'
             
-            # Cập nhật lịch sử gần đây
             recent_tai_xiu.append('T' if tx_result == 'tai' else 'X')
             if len(recent_tai_xiu) > 12: recent_tai_xiu.pop(0)
             
             recent_chan_le.append('C' if cl_result == 'chan' else 'L')
             if len(recent_chan_le) > 12: recent_chan_le.pop(0)
 
-            # Tính toán tiền thắng thua cho người chơi trong phiên
-            win_summary = []
             for uid, bet in bets_current.items():
                 user_obj = get_user(uid)
                 b_type = bet["type"]
                 b_amt = bet["amount"]
-                b_name = bet["name"]
                 
-                won = False
                 if b_type == tx_result or b_type == cl_result:
-                    won = True
-                
-                if won:
-                    win_amt = b_amt * 1.95 # Tỉ lệ thắng 1 ăn 1.95
+                    win_amt = b_amt * 1.95
                     user_obj["balance"] += win_amt
-                    win_summary.append(f"• <b>{b_name}</b> (+{win_amt:,.0f}đ)")
-                else:
-                    pass # Tiền đã bị trừ khi đặt cược
 
             bets_current.clear()
 
-            # Gửi bảng kết quả tổng kết phiên
             res_string = "TÀI (T)" if tx_result == 'tai' else "XỈU (X)"
             cl_string = "CHẴN (C)" if cl_result == 'chan' else "LẺ (L)"
             
@@ -1382,6 +1413,7 @@ async def auto_tai_xiu_loop():
                 f"📊 <b>KẾT QUẢ PHIÊN #{current_session}</b> 📊\n\n"
                 f"🎲 Xúc xắc: <b>{v1} - {v2} - {v3}</b> (Tổng: <b>{total_sum}</b>)\n"
                 f"🏆 Kết quả: <b>{res_string} | {cl_string}</b>\n\n"
+                f"🏺 <b>Hũ hiện tại:</b> <b>{current_jackpot:,.0f} VND</b>\n"
                 f"📜 Lịch sử Tài Xỉu: <code>{' '.join(recent_tai_xiu[-10:])}</code>\n"
                 f"📜 Lịch sử Chẵn Lẻ: <code>{' '.join(recent_chan_le[-10:])}</code>\n"
             )
@@ -1389,20 +1421,8 @@ async def auto_tai_xiu_loop():
 
             current_session += 1
             
-            # Mở khóa lại chat nhóm và gửi thông báo mở phiên mới kèm gợi ý lệnh
             await unlock_chat(GROUP_CHAT_ID)
-            
-            next_session_text = (
-                f"🎮 <b>BẮT ĐẦU PHIÊN MỚI: #{current_session}</b> 🎮\n\n"
-                f"💡 <b>Gợi ý lệnh đặt cược công khai:</b>\n"
-                f"• Tài: <code>/Tai [số tiền]</code> | Xỉu: <code>/Xiu [số tiền]</code>\n"
-                f"• Chẵn: <code>/C [số tiền]</code> | Lẻ: <code>/L [số tiền]</code>\n\n"
-                f"🥷 <b>Gợi ý lệnh đặt cược ẩn danh:</b>\n"
-                f"• Tài ẩn danh: <code>/TT [số tiền]</code> | Xỉu ẩn danh: <code>/XX [số tiền]</code>\n"
-                f"• Chẵn ẩn danh: <code>/CC [số tiền]</code> | Lẻ ẩn danh: <code>/LL [số tiền]</code>\n\n"
-                f"⏳ <i>Thời gian đặt cược đang diễn ra... Nhanh tay đặt cược nào!</i>"
-            )
-            await bot.send_message(GROUP_CHAT_ID, next_session_text)
+            await asyncio.sleep(1)
 
         except Exception as e:
             logging.error(f"Lỗi trong vòng lặp auto tài xỉu: {e}")
@@ -1425,7 +1445,7 @@ async def catch_all_messages(message: types.Message):
         if GROUP_CHAT_ID != message.chat.id:
             GROUP_CHAT_ID = message.chat.id
             
-        if text.startswith(("/tai", "/xiu", "/c", "/l", "/tt", "/xx", "/cc", "/ll")):
+        if text.startswith(("/tai", "/xiu", "/c", "/l", "/chan", "/le", "/tt", "/xx", "/cc", "/ll")):
             if len(parts) >= 2 and parts[1].isdigit():
                 cmd = parts[0].replace("/", "")
                 amount = float(parts[1])
@@ -1441,7 +1461,7 @@ async def catch_all_messages(message: types.Message):
                     bet_type = "tai"
                 elif cmd in ["xiu", "xx"]:
                     bet_type = "xiu"
-                elif cmd in ["c", "cc"]:
+                elif cmd in ["c", "chan", "cc"]:
                     bet_type = "chan"
                 else:
                     bet_type = "le"
@@ -1585,57 +1605,8 @@ async def catch_all_messages(message: types.Message):
         return
 
     # GAME BOWLING
-    if text.startswith(("/chan", "/le")):
-        if len(parts) >= 2 and parts[1].isdigit():
-            bet_choice = parts[0].replace("/", "")
-            amount = float(parts[1])
-            if amount < 10000:
-                await message.reply("⚠️ Cược tối thiểu cho game Bowling là 10,000đ!")
-                return
-            if user["balance"] < amount:
-                await message.reply(f"❌ Số dư không đủ! Số dư hiện tại: {user['balance']:,.0f} VND. Vui lòng nạp thêm!")
-                return
-
-            user["balance"] -= amount
-            user["total_cuoc"] += amount
-
-            dice_msg = await bot.send_dice(chat_id=message.chat.id, emoji="Bowling")
-            await asyncio.sleep(3.5)
-            val = dice_msg.dice.value
-
-            pins = val if val in [2, 3, 4, 5, 6] else 0
-
-            if pins == 0:
-                res_text = (
-                    f"❌ <b>KẾT QUẢ BOWLING:</b> THUA!\n"
-                    f"🎳 Ném bóng ra ngoài (Đổ 0 chai)!\n"
-                    f"💸 Số tiền thua: <b>-{amount:,.0f} VND</b>\n"
-                    f"💵 Số dư còn lại: <b>{user['balance']:,.0f} VND</b>"
-                )
-            else:
-                is_even = (pins % 2 == 0)
-                win = (bet_choice == "chan" and is_even) or (bet_choice == "le" and not is_even)
-
-                if win:
-                    win_amt = amount * 1.90
-                    user["balance"] += win_amt
-                    res_text = (
-                        f"🎉 <b>KẾT QUẢ BOWLING:</b> THẮNG!\n"
-                        f"🎳 Đổ {pins} chai ({'CHẲN' if is_even else 'LẺ'})\n"
-                        f"💰 Tiền thưởng: <b>+{win_amt:,.0f} VND</b>\n"
-                        f"💵 Số dư hiện tại: <b>{user['balance']:,.0f} VND</b>"
-                    )
-                else:
-                    res_text = (
-                        f"❌ <b>KẾT QUẢ BOWLING:</b> THUA!\n"
-                        f"🎳 Đổ {pins} chai ({'CHẲN' if is_even else 'LẺ'})\n"
-                        f"💸 Số tiền thua: <b>-{amount:,.0f} VND</b>\n"
-                        f"💵 Số dư còn lại: <b>{user['balance']:,.0f} VND</b>"
-                    )
-            await message.reply(res_text)
-        else:
-            await message.reply("⚠️ Cú pháp: <code>/Chan [số tiền]</code> hoặc <code>/Le [số tiền]</code>")
-        return
+    if text.startswith(("/chan", "/le", "/c", "/l")) and len(parts) >= 2 and parts[1].isdigit():
+        pass # Đã xử lý ở trên
 
     # GAME PHI TIÊU
     if text.startswith("/vong"):
