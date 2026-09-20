@@ -1823,10 +1823,26 @@ async def catch_all_messages(message: types.Message):
         return
 
 # --- HÀM MAIN VÀ KHỞI CHẠY BOT ---
+async def handle_ping(request):
+    return web.Response(text="Bot BTV88 Club đang hoạt động!", status=200)
+
+async def start_web_server():
+    app = web.Application()
+    app.router.add_get('/', handle_ping)
+    runner = web.AppRunner(app)
+    await runner.setup()
+    port = int(os.environ.get("PORT", 8080))
+    site = web.TCPSite(runner, '0.0.0.0', port)
+    await site.start()
+
 async def main():
+    # Mở cổng web server cho Render phát hiện Port
+    await start_web_server()
+    
     await set_bot_commands(bot)
     logging.info("Bot BTV88 Club đã sẵn sàng hoạt động...")
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
     asyncio.run(main())
+
