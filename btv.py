@@ -23,7 +23,7 @@ from aiogram.types import (
 from aiohttp import web
 
 # --- CẤU HÌNH CƠ BẢN ---
-TOKEN = "8905955749:AAGmfbtPR0jmox3sMW3t84nK09QMq4SLiyY"
+TOKEN = "8905955749:AAGUq2yG2ZaQyNdJ1cRM3ozn6ysb4697oCM"
 ADMIN_ID = 8312903264
 GROUP_CHAT_ID = None 
 
@@ -57,7 +57,7 @@ aviator_games = {}
 users_db = {
     ADMIN_ID: {
         "balance": 50000000.0, 
-        "name": "Admin Tổng", 
+        "name": "Miutea88", 
         "total_nap": 10000000.0, 
         "total_cuoc": 5000000.0,
         "history_nap": [],
@@ -499,7 +499,7 @@ async def process_game_callback(callback: types.CallbackQuery, state: FSMContext
         )
     elif game_code == "game_cl":
         text = (
-            "⚫️ <b>GAME CHĂN LẺ</b>\n\n"
+            "⚫️ <b>GAME CHẮN LẺ</b>\n\n"
             "📌 <b>Hướng dẫn chơi:</b> Tham gia vào nhóm chat để đặt cược cùng mọi người.\n"
             "• Đặt Chẵn: <code>/C [số tiền]</code>\n"
             "• Đặt Lẻ: <code>/L [số tiền]</code>\n\n"
@@ -534,7 +534,7 @@ async def process_game_callback(callback: types.CallbackQuery, state: FSMContext
         )
     elif game_code == "game_bw":
         text = (
-            "🎳 <b>BOWLING CHĂN LẺ</b>\n\n"
+            "🎳 <b>BOWLING CHẮN LẺ</b>\n\n"
             "<b>Hướng dẫn chơi:</b>\n"
             "• Ném bóng đổ 2,4,6 chai là <b>CHẲN</b>\n"
             "• Ném bóng đổ 1,3,5 chai là <b>LẺ</b>\n"
@@ -1169,7 +1169,7 @@ async def run_aviator_flight(user_id: int, bet_amount: float, target_x: float, m
             await bot.edit_message_text(
                 chat_id=chat_id,
                 message_id=msg_id,
-                text=f"🛩️ <b>Máy bay đang bay:</b> x{current_x:.2f}\n💥 Hệ số tối đa phiên: x{target_x:.2f}",
+                text=f"💰 <b>Số tiền cược:</b> <b>{bet_amount:,.0f} VND</b>\n🛩️ <b>Máy bay đang bay:</b> x{current_x:.2f}",
                 reply_markup=stop_kb
             )
         except Exception:
