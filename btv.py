@@ -339,13 +339,13 @@ async def cmd_admin_tru(message: types.Message):
     except ValueError:
         await message.reply("❌ ID hoặc số tiền không hợp lệ!")
 
-@dp.message(Command("tao_code"))
+@dp.message(Command("tao_code_legacy"))
 async def cmd_admin_tao_code(message: types.Message):
     if message.from_user.id != ADMIN_ID:
         return
     args = message.text.split()
     if len(args) < 4:
-        await message.reply("⚠️ Cú pháp: <code>/tao_code [Mã_Code] [Số_tiền] [Số_lượt]</code>")
+        await message.reply("⚠️ Cú pháp: <code>/tao_code_legacy [Mã_Code] [Số_tiền] [Số_lượt]</code>")
         return
     code = args[1].upper()
     try:
@@ -534,7 +534,7 @@ async def process_game_callback(callback: types.CallbackQuery, state: FSMContext
         )
     elif game_code == "game_bw":
         text = (
-            " bowling CHĂN LẺ</b>\n\n"
+            "🎳 <b>BOWLING CHĂN LẺ</b>\n\n"
             "<b>Hướng dẫn chơi:</b>\n"
             "• Ném bóng đổ 2,4,6 chai là <b>CHẲN</b>\n"
             "• Ném bóng đổ 1,3,5 chai là <b>LẺ</b>\n"
@@ -1418,7 +1418,7 @@ async def catch_all_messages(message: types.Message):
             await message.reply("⚠️ Cú pháp: <code>/BD [số tiền cược]</code>")
         return
 
-    # GAME BOWLING
+    # GAME BOWLING (FIXED CRASH)
     if text.startswith(("/chan", "/le")):
         if len(parts) >= 2 and parts[1].isdigit():
             bet_choice = parts[0].replace("/", "")
@@ -1433,7 +1433,7 @@ async def catch_all_messages(message: types.Message):
             user["balance"] -= amount
             user["total_cuoc"] += amount
 
-            dice_msg = await bot.send_dice(chat_id=message.chat.id, emoji="Bowling")
+            dice_msg = await bot.send_dice(chat_id=message.chat.id, emoji="🎳")
             await asyncio.sleep(3.5)
             pins = dice_msg.dice.value
             
@@ -1448,14 +1448,14 @@ async def catch_all_messages(message: types.Message):
                 user["balance"] += win_amt
                 res_text = (
                     f"🎉 <b>KẾT QUẢ BOWLING ({pins} chai):</b> THẮNG!\n"
-                    f" bowling Bạn chọn {bet_choice.upper()} - Đã trúng kết quả!\n"
+                    f"🎳 Bạn chọn {bet_choice.upper()} - Đã trúng kết quả!\n"
                     f"💰 Tiền thưởng: <b>+{win_amt:,.0f} VND</b>\n"
                     f"💵 Số dư hiện tại: <b>{user['balance']:,.0f} VND</b>"
                 )
             else:
                 res_text = (
                     f"❌ <b>KẾT QUẢ BOWLING ({pins} chai):</b> THUA!\n"
-                    f" bowling Kết quả không khớp cược của bạn!\n"
+                    f"🎳 Kết quả không khớp cược của bạn!\n"
                     f"💸 Số tiền thua: <b>-{amount:,.0f} VND</b>\n"
                     f"💵 Số dư còn lại: <b>{user['balance']:,.0f} VND</b>"
                 )
