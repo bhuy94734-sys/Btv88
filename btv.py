@@ -91,6 +91,7 @@ async def set_bot_commands(bot: Bot):
         BotCommand(command="nap", description="Nạp tiền tự động / QR Code"),
         BotCommand(command="rut", description="Tạo lệnh rút tiền"),
         BotCommand(command="code", description="Nhập Giftcode nhận thưởng"),
+        BotCommand(command="lenh", description="Xem danh sách lệnh người chơi"),
     ]
     try:
         await bot.set_my_commands(commands, scope=BotCommandScopeDefault())
@@ -359,6 +360,43 @@ async def cmd_admin_set_hu(message: types.Message):
     except ValueError:
         await message.reply("❌ Số tiền không hợp lệ!")
 
+# --- LỆNH XEM DANH SÁCH LỆNH CỦA NGƯỜI CHƠI ---
+@dp.message(Command("lenh"))
+async def cmd_user_lenh(message: types.Message):
+    text = (
+        f"📜 <b>DANH SÁCH LỆNH DÀNH CHO NGƯỜI CHƠI</b>\n\n"
+        f"🎲 <b>CƯỢC TÀI XỈU - CHẮN LẺ (TRONG NHÓM):</b>\n"
+        f"<b>Cược công khai:</b>\n"
+        f"• Lệnh cược Tài: <code>/Tai (số tiền cược)</code>\n"
+        f"• Lệnh cược Xỉu: <code>/Xiu (số tiền cược)</code>\n"
+        f"• Lệnh cược Chẵn: <code>/C (số tiền cược)</code>\n"
+        f"• Lệnh cược Lẻ: <code>/L (số tiền cược)</code>\n"
+        f"<b>Cược ẩn danh:</b>\n"
+        f"• Lệnh cược Tài ẩn danh: <code>/TT (số tiền cược)</code>\n"
+        f"• Lệnh cược Xỉu ẩn danh: <code>/XX (số tiền cược)</code>\n"
+        f"• Lệnh cược Chẵn ẩn danh: <code>/CC (số tiền cược)</code>\n"
+        f"• Lệnh cược Lẻ ẩn danh: <code>/LL (số tiền cược)</code>\n\n"
+        f"💳 <b>TÀI KHOẢN & GIAO DỊCH:</b>\n"
+        f"• <code>/start</code> - Khởi động bot & mở menu chính\n"
+        f"• <code>/sodu</code> - Kiểm tra số dư tài khoản\n"
+        f"• <code>/nap</code> - Tạo lệnh nạp tiền\n"
+        f"• <code>/rut (số tiền) (STK) (Ngân hàng)</code> - Rút tiền về ngân hàng\n"
+        f"• <code>/code (MãCode)</code> - Nhập Giftcode nhận thưởng\n"
+        f"• <code>/lenh</code> - Xem danh sách tất cả các lệnh người chơi\n\n"
+        f"🎮 <b>CÚ PHÁP CÁC GAME KHÁC:</b>\n"
+        f"• Bỏng ngô: <code>/Ngo (số tiền)</code>\n"
+        f"• Bóng rổ: <code>/BR (số tiền)</code>\n"
+        f"• Bóng đá: <code>/BD (số tiền)</code>\n"
+        f"• Bowling: <code>/Chan (số tiền)</code> | <code>/Le (số tiền)</code>\n"
+        f"• Phi tiêu: <code>/vong1</code> đến <code>/vong5 (số tiền)</code>\n"
+        f"• Kéo búa bao: <code>/Bua</code> | <code>/Keo</code> | <code>/Bao (số tiền)</code>\n"
+        f"• Cứu thương: <code>/cuu (số tiền)</code>\n"
+        f"• Đèn đỏ đèn xanh: <code>/vuot (số tiền)</code>\n"
+        f"• Rót rượu: <code>/rot (số tiền)</code>\n"
+        f"• Bầu cua: <code>[Cửa1] [Cửa2] [Cửa3] (số tiền)</code>"
+    )
+    await message.answer(text)
+
 # --- XỬ LÝ LỆNH NGƯỜI DÙNG & NÚT BẤM ---
 @dp.message(CommandStart())
 async def cmd_start(message: types.Message):
@@ -484,7 +522,7 @@ async def process_game_callback(callback: types.CallbackQuery, state: FSMContext
         )
     elif game_code == "game_bw":
         text = (
-            "🎳 <b>GAME BOWLING CHĂN LẺ</b>\n\n"
+            " bowling CHĂN LẺ</b>\n\n"
             "<b>Hướng dẫn chơi:</b>\n"
             "• Ném bóng đổ 2,4,6 chai là <b>CHẲN</b>\n"
             "• Ném bóng đổ 1,3,5 chai là <b>LẺ</b>\n"
@@ -1189,7 +1227,7 @@ async def catch_all_messages(message: types.Message):
             user["balance"] -= amount
             user["total_cuoc"] += amount
 
-            dice_msg = await bot.send_dice(chat_id=message.chat.id, emoji="🎳")
+            dice_msg = await bot.send_dice(chat_id=message.chat.id, emoji="Bowling")
             await asyncio.sleep(3.5)
             pins = dice_msg.dice.value
             
@@ -1546,7 +1584,17 @@ async def game_loop():
                 f"📊 <b>THỐNG KÊ 12 PHIÊN GẦN NHẤT:</b>\n"
                 f"• Tài / Xỉu: {tx_display}\n"
                 f"• Chẵn / Lẻ: {cl_display}\n\n"
-                f"👇 <i>Cú pháp cược:</i> <code>/Tai 10000</code> | <code>/Xiu 10000</code>"
+                f"👉 <b>CÚ PHÁP ĐẶT CƯỢC:</b>\n"
+                f"<b>Cược công khai:</b>\n"
+                f"Lệnh cược Tài: <code>/Tai (số tiền cược)</code>\n"
+                f"Lệnh cược Xỉu: <code>/Xiu (số tiền cược)</code>\n"
+                f"Lệnh cược Chẵn: <code>/C (số tiền cược)</code>\n"
+                f"Lệnh cược Lẻ: <code>/L (số tiền cược)</code>\n"
+                f"<b>Cược ẩn danh:</b>\n"
+                f"Lệnh cược Tài ẩn danh: <code>/TT (số tiền cược)</code>\n"
+                f"Lệnh cược Xỉu ẩn danh: <code>/XX (số tiền cược)</code>\n"
+                f"Lệnh cược Chẵn ẩn danh: <code>/CC (số tiền cược)</code>\n"
+                f"Lệnh cược Lẻ ẩn danh: <code>/LL (số tiền cược)</code>"
             )
             
             session_msg = await bot.send_message(GROUP_CHAT_ID, start_text)
@@ -1571,7 +1619,17 @@ async def game_loop():
                     f"📊 <b>CẦU 12 PHIÊN GẦN NHẤT:</b>\n"
                     f"• T/X: {tx_disp_live}\n"
                     f"• C/L: {cl_disp_live}\n\n"
-                    f"👉 Cú pháp: <code>/Tai [tiền]</code> | <code>/Xiu [tiền]</code> | <code>/C [tiền]</code> | <code>/L [tiền]</code>"
+                    f"👉 <b>CÚ PHÁP ĐẶT CƯỢC:</b>\n"
+                    f"<b>Cược công khai:</b>\n"
+                    f"Lệnh cược Tài: <code>/Tai (số tiền cược)</code>\n"
+                    f"Lệnh cược Xỉu: <code>/Xiu (số tiền cược)</code>\n"
+                    f"Lệnh cược Chẵn: <code>/C (số tiền cược)</code>\n"
+                    f"Lệnh cược Lẻ: <code>/L (số tiền cược)</code>\n"
+                    f"<b>Cược ẩn danh:</b>\n"
+                    f"Lệnh cược Tài ẩn danh: <code>/TT (số tiền cược)</code>\n"
+                    f"Lệnh cược Xỉu ẩn danh: <code>/XX (số tiền cược)</code>\n"
+                    f"Lệnh cược Chẵn ẩn danh: <code>/CC (số tiền cược)</code>\n"
+                    f"Lệnh cược Lẻ ẩn danh: <code>/LL (số tiền cược)</code>"
                 )
                 try:
                     await session_msg.edit_text(update_text)
