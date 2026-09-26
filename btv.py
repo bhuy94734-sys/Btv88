@@ -1313,7 +1313,7 @@ async def process_aviator_explode(callback: types.CallbackQuery):
     game["target_x"] = game["current_x"]
     await callback.answer("💥 Đã cho nổ máy bay lập tức!", show_alert=True)
 
-# --- VÒNG LẶP TỰ ĐỘNG TUNG XÚC XẮC TÀI XỈU & CHẴN LẺ (GỬI MỚI MỖI 5 GIÂY & ICON LỊCH SỬ) ---
+# --- VÒNG LẶP TỰ ĐỘNG TUNG XÚC XẮC TÀI XỈU & CHẮN LẺ (GỬI MỚI MỖI 5S, ICON LỊCH SỬ & CỘNG 1% TIỀN THUA VÀO HŨ) ---
 async def auto_tai_xiu_loop():
     global current_session, current_jackpot, force_result, recent_tai_xiu, recent_chan_le, bets_current
     while True:
@@ -1413,7 +1413,9 @@ async def auto_tai_xiu_loop():
             recent_chan_le.append('🔵' if cl_result == 'chan' else '🟡')
             if len(recent_chan_le) > 12: recent_chan_le.pop(0)
 
-            # Xử lý trả thưởng & gửi thông báo riêng cho từng khách hàng
+            # Xử lý trả thưởng, gửi thông báo riêng & tính tổng tiền thua để cộng 1% vào Hũ Jackpot
+            total_lost_amount = 0.0
+
             for uid, bet in bets_current.items():
                 user_obj = get_user(uid)
                 b_type = bet["type"]
@@ -1432,6 +1434,7 @@ async def auto_tai_xiu_loop():
                         f"💵 Số dư ví hiện tại: <b>{user_obj['balance']:,.0f} VND</b>"
                     )
                 else:
+                    total_lost_amount += b_amt  # Tích lũy tiền thua của khách
                     personal_notice = (
                         f"❌ <b>THÔNG BÁO KẾT QUẢ PHIÊN #{current_session}</b>\n\n"
                         f"🎯 Cửa cược: <b>{b_type.upper()}</b> ({b_amt:,.0f} VND)\n"
@@ -1443,6 +1446,10 @@ async def auto_tai_xiu_loop():
                     await bot.send_message(uid, personal_notice)
                 except Exception:
                     pass
+
+            # Tự động cộng 1% tổng tiền cược thua vào Hũ Jackpot
+            if total_lost_amount > 0:
+                current_jackpot += total_lost_amount * 0.01
 
             bets_current.clear()
 
