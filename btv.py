@@ -43,8 +43,8 @@ class SlotPGState(StatesGroup):
 # --- BIẾN TRẠNG THÁI TRÒ CHƠI & KHUYẾN MÃI ---
 current_session = 105027
 current_jackpot = 600000.0
-recent_tai_xiu = ['T', 'X', 'T', 'X', 'T', 'X', 'T', 'X', 'T', 'X', 'T', 'X']
-recent_chan_le = ['C', 'L', 'C', 'L', 'C', 'L', 'C', 'L', 'C', 'L', 'C', 'L']
+recent_tai_xiu = ['🟢', '🔴', '🟢', '🔴', '🟢', '🔴', '🟢', '🔴', '🟢', '🔴', '🟢', '🔴']
+recent_chan_le = ['🔵', '🟡', '🔵', '🟡', '🔵', '🟡', '🔵', '🟡', '🔵', '🟡', '🔵', '🟡']
 game_running = True
 
 promo_config = {"percent": 0.0, "expire_at": None}
@@ -536,7 +536,7 @@ async def process_game_callback(callback: types.CallbackQuery, state: FSMContext
             "• <b>Tỉ lệ trả thưởng:</b> x1,90 số tiền cược\n\n"
             "📌 <b>Lệnh đặt cược:</b>\n"
             "• Cược Chẵn: <code>chan [số tiền]</code> hoặc <code>chan all</code>\n"
-            "• Cược Lẻ: <code>le [số tiền]</code> hoặc <code>le all</code>\n"
+            "• Cược Lẻ: <code>le [số tiền]</code> atau <code>le all</code>\n"
             "(Cược tối thiểu 10,000đ)"
         )
     elif game_code == "game_pt":
@@ -1313,7 +1313,7 @@ async def process_aviator_explode(callback: types.CallbackQuery):
     game["target_x"] = game["current_x"]
     await callback.answer("💥 Đã cho nổ máy bay lập tức!", show_alert=True)
 
-# --- VÒNG LẶP TỰ ĐỘNG TUNG XÚC XẮC TÀI XỈU & CHẴN LẺ (CÓ ĐẾM NGƯỢC REALTIME & HŨ) ---
+# --- VÒNG LẶP TỰ ĐỘNG TUNG XÚC XẮC TÀI XỈU & CHẴN LẺ (GỬI MỚI MỖI 5 GIÂY & ICON LỊCH SỬ) ---
 async def auto_tai_xiu_loop():
     global current_session, current_jackpot, force_result, recent_tai_xiu, recent_chan_le, bets_current
     while True:
@@ -1323,62 +1323,48 @@ async def auto_tai_xiu_loop():
 
         try:
             total_seconds = 45
-            
-            sum_tai = sum(b["amount"] for b in bets_current.values() if b["type"] == "tai")
-            sum_xiu = sum(b["amount"] for b in bets_current.values() if b["type"] == "xiu")
-            sum_chan = sum(b["amount"] for b in bets_current.values() if b["type"] == "chan")
-            sum_le = sum(b["amount"] for b in bets_current.values() if b["type"] == "le")
-            
-            start_msg = await bot.send_message(
-                GROUP_CHAT_ID,
-                f"💎 <b>BTV88 CLUB - PHIÊN #{current_session}</b> 💎\n"
-                f"🏺 <b>Hũ Jackpot:</b> <b>{current_jackpot:,.0f} VND</b>\n\n"
-                f"⏳ <b>Thời gian đặt cược còn lại:</b> <code>{total_seconds}s</code> (Hỗ trợ cược dồn & all)\n\n"
-                f"📊 <b>Thống kê cược hiện tại:</b>\n"
-                f"• Cửa TÀI: <b>{sum_tai:,.0f} VND</b> | Cửa XỈU: <b>{sum_xiu:,.0f} VND</b>\n"
-                f"• Cửa CHẴN: <b>{sum_chan:,.0f} VND</b> | Cửa LẺ: <b>{sum_le:,.0f} VND</b>\n\n"
-                f"💡 <b>Lệnh cược Tài/Xỉu:</b> <code>tai [tiền/all]</code> | <code>xiu [tiền/all]</code> (Ẩn danh: <code>tt</code> / <code>xx</code>)\n"
-                f"💡 <b>Lệnh cược Chẵn/Lẻ:</b> <code>chan [tiền/all]</code> | <code>le [tiền/all]</code> (Ẩn danh: <code>cc</code> / <code>ll</code>)"
-            )
-            
             elapsed = 0
+            current_stat_msg_id = None
+            
             while elapsed < total_seconds:
-                await asyncio.sleep(5)
-                elapsed += 5
-                remaining = max(0, total_seconds - elapsed)
-                
                 sum_tai = sum(b["amount"] for b in bets_current.values() if b["type"] == "tai")
                 sum_xiu = sum(b["amount"] for b in bets_current.values() if b["type"] == "xiu")
                 sum_chan = sum(b["amount"] for b in bets_current.values() if b["type"] == "chan")
                 sum_le = sum(b["amount"] for b in bets_current.values() if b["type"] == "le")
                 
+                remaining = max(0, total_seconds - elapsed)
+                
+                stat_text = (
+                    f"💎 <b>BTV88 CLUB - PHIÊN #{current_session}</b> 💎\n"
+                    f"🏺 <b>Hũ Jackpot:</b> <b>{current_jackpot:,.0f} VND</b>\n\n"
+                    f"⏳ <b>Thời gian đặt cược còn lại:</b> <code>{remaining}s</code> (Hỗ trợ cược dồn & all)\n\n"
+                    f"📊 <b>Thống kê cược hiện tại:</b>\n"
+                    f"• Cửa TÀI: <b>{sum_tai:,.0f} VND</b> | Cửa XỈU: <b>{sum_xiu:,.0f} VND</b>\n"
+                    f"• Cửa CHẴN: <b>{sum_chan:,.0f} VND</b> | Cửa LẺ: <b>{sum_le:,.0f} VND</b>\n\n"
+                    f"💡 <b>Lệnh cược Tài/Xỉu:</b> <code>tai [tiền/all]</code> | <code>xiu [tiền/all]</code> (Ẩn danh: <code>tt</code> / <code>xx</code>)\n"
+                    f"💡 <b>Lệnh cược Chẵn/Lẻ:</b> <code>chan [tiền/all]</code> | <code>le [tiền/all]</code> (Ẩn danh: <code>cc</code> / <code>ll</code>)"
+                )
+                
+                if current_stat_msg_id:
+                    try:
+                        await bot.delete_message(chat_id=GROUP_CHAT_ID, message_id=current_stat_msg_id)
+                    except Exception:
+                        pass
+                
+                new_msg = await bot.send_message(GROUP_CHAT_ID, stat_text)
+                current_stat_msg_id = new_msg.message_id
+                
+                await asyncio.sleep(5)
+                elapsed += 5
+
+            if current_stat_msg_id:
                 try:
-                    await bot.edit_message_text(
-                        chat_id=GROUP_CHAT_ID,
-                        message_id=start_msg.message_id,
-                        text=f"💎 <b>BTV88 CLUB - PHIÊN #{current_session}</b> 💎\n"
-                             f"🏺 <b>Hũ Jackpot:</b> <b>{current_jackpot:,.0f} VND</b>\n\n"
-                             f"⏳ <b>Thời gian đặt cược còn lại:</b> <code>{remaining}s</code> (Hỗ trợ cược dồn & all)\n\n"
-                             f"📊 <b>Thống kê cược hiện tại:</b>\n"
-                             f"• Cửa TÀI: <b>{sum_tai:,.0f} VND</b> | Cửa XỈU: <b>{sum_xiu:,.0f} VND</b>\n"
-                             f"• Cửa CHẴN: <b>{sum_chan:,.0f} VND</b> | Cửa LẺ: <b>{sum_le:,.0f} VND</b>\n\n"
-                             f"💡 <b>Lệnh cược Tài/Xỉu:</b> <code>tai [tiền/all]</code> | <code>xiu [tiền/all]</code> (Ẩn danh: <code>tt</code> / <code>xx</code>)\n"
-                             f"💡 <b>Lệnh cược Chẵn/Lẻ:</b> <code>chan [tiền/all]</code> | <code>le [tiền/all]</code> (Ẩn danh: <code>cc</code> / <code>ll</code>)"
-                    )
+                    await bot.delete_message(chat_id=GROUP_CHAT_ID, message_id=current_stat_msg_id)
                 except Exception:
                     pass
 
             await lock_chat(GROUP_CHAT_ID)
-            
-            try:
-                await bot.edit_message_text(
-                    chat_id=GROUP_CHAT_ID,
-                    message_id=start_msg.message_id,
-                    text=f"🔒 <b>PHIÊN #{current_session} ĐÃ ĐÓNG CƯỢC!</b>\n"
-                         f"⏳ Đang tiến hành tung xúc xắc..."
-                )
-            except Exception:
-                pass
+            await bot.send_message(GROUP_CHAT_ID, f"🔒 <b>PHIÊN #{current_session} ĐÃ ĐÓNG CƯỢC!</b>\n⏳ Đang tiến hành tung xúc xắc...")
             
             await asyncio.sleep(2)
             
@@ -1420,25 +1406,48 @@ async def auto_tai_xiu_loop():
                 
             cl_result = 'chan' if total_sum % 2 == 0 else 'le'
             
-            recent_tai_xiu.append('T' if tx_result == 'tai' else 'X')
+            # Cập nhật lịch sử bằng 4 icon khác nhau: Tài (🟢), Xỉu (🔴) | Chẵn (🔵), Lẻ (🟡)
+            recent_tai_xiu.append('🟢' if tx_result == 'tai' else '🔴')
             if len(recent_tai_xiu) > 12: recent_tai_xiu.pop(0)
             
-            recent_chan_le.append('C' if cl_result == 'chan' else 'L')
+            recent_chan_le.append('🔵' if cl_result == 'chan' else '🟡')
             if len(recent_chan_le) > 12: recent_chan_le.pop(0)
 
+            # Xử lý trả thưởng & gửi thông báo riêng cho từng khách hàng
             for uid, bet in bets_current.items():
                 user_obj = get_user(uid)
                 b_type = bet["type"]
                 b_amt = bet["amount"]
                 
-                if b_type == tx_result or b_type == cl_result:
+                is_win = (b_type == tx_result or b_type == cl_result)
+                
+                if is_win:
                     win_amt = b_amt * 1.95
                     user_obj["balance"] += win_amt
+                    personal_notice = (
+                        f"🎉 <b>THÔNG BÁO KẾT QUẢ PHIÊN #{current_session}</b>\n\n"
+                        f"🎯 Cửa cược: <b>{b_type.upper()}</b> ({b_amt:,.0f} VND)\n"
+                        f"🏆 Kết quả: <b>THẮNG</b>\n"
+                        f"💰 Tiền thưởng nhận: <b>+{win_amt:,.0f} VND</b>\n"
+                        f"💵 Số dư ví hiện tại: <b>{user_obj['balance']:,.0f} VND</b>"
+                    )
+                else:
+                    personal_notice = (
+                        f"❌ <b>THÔNG BÁO KẾT QUẢ PHIÊN #{current_session}</b>\n\n"
+                        f"🎯 Cửa cược: <b>{b_type.upper()}</b> ({b_amt:,.0f} VND)\n"
+                        f"💸 Kết quả: <b>THUA</b>\n"
+                        f"💵 Số dư ví hiện tại: <b>{user_obj['balance']:,.0f} VND</b>"
+                    )
+                
+                try:
+                    await bot.send_message(uid, personal_notice)
+                except Exception:
+                    pass
 
             bets_current.clear()
 
-            res_string = "TÀI (T)" if tx_result == 'tai' else "XỈU (X)"
-            cl_string = "CHẴN (C)" if cl_result == 'chan' else "LẺ (L)"
+            res_string = "TÀI (🟢)" if tx_result == 'tai' else "XỈU (🔴)"
+            cl_string = "CHẴN (🔵)" if cl_result == 'chan' else "LẺ (🟡)"
             
             summary_text = (
                 f"📊 <b>KẾT QUẢ PHIÊN #{current_session}</b> 📊\n\n"
@@ -1446,8 +1455,8 @@ async def auto_tai_xiu_loop():
                 f"🏆 Kết quả: <b>{res_string} | {cl_string}</b>"
                 f"{jackpot_winners_msg}\n\n"
                 f"🏺 <b>Hũ hiện tại:</b> <b>{current_jackpot:,.0f} VND</b>\n"
-                f"📜 Lịch sử Tài Xỉu: <code>{' '.join(recent_tai_xiu[-10:])}</code>\n"
-                f"📜 Lịch sử Chẵn Lẻ: <code>{' '.join(recent_chan_le[-10:])}</code>\n"
+                f"📜 Lịch sử Tài Xỉu: {' '.join(recent_tai_xiu[-10:])}\n"
+                f"📜 Lịch sử Chẵn Lẻ: {' '.join(recent_chan_le[-10:])}\n"
             )
             await bot.send_message(GROUP_CHAT_ID, summary_text)
 
@@ -1781,7 +1790,7 @@ async def catch_all_messages(message: types.Message):
                     f"• Bạn chọn: {choice_icons[user_choice]}\n"
                     f"• Bot chọn: {choice_icons[bot_choice]}\n"
                     f"💸 Số tiền thua: <b>-{amount:,.0f} VND</b>\n"
-                    f"💵 Số dư hiện tại: <b>{user['balance']:,.0f} VND</b>"
+                    f"💵 Số dư còn lại: <b>{user['balance']:,.0f} VND</b>"
                 )
             await message.reply(res_text)
         else:
