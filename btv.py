@@ -524,7 +524,7 @@ async def process_game_callback(callback: types.CallbackQuery, state: FSMContext
             "• Sút Vào Gôn Là <b>THẮNG</b>\n"
             "• Sút Ra Ngoài Là <b>THUA</b>\n"
             "• <b>Tỉ lệ trả thưởng:</b> x1,5 số tiền cược\n\n"
-            "📌 <b>Lệnh đặt cược:</b> <code>bd [số tiền cược]</code> hoặc <code>bd all</code> (Cược tối thiểu 10,000đ)"
+            "📌 <b>Lệnh đặt cược:</b> <code>bd [số tiền cược]</code> atau <code>bd all</code> (Cược tối thiểu 10,000đ)"
         )
     elif game_code == "game_bw":
         text = (
@@ -592,7 +592,7 @@ async def process_game_callback(callback: types.CallbackQuery, state: FSMContext
             "<b>Hướng dẫn chơi:</b>\n"
             "Xe cứu thương Đổ là Thắng (x3,5 tiền cược)\n"
             "Xe cứu thương Không Đổ là Thua\n\n"
-            "Lệnh đặt cược: <code>cuu [số tiền]</code> hoặc <code>cuu all</code>"
+            "Lệnh đặt cược: <code>cuu [số tiền]</code> atau <code>cuu all</code>"
         )
     elif game_code == "game_den_do_den_xanh":
         text = (
@@ -600,7 +600,7 @@ async def process_game_callback(callback: types.CallbackQuery, state: FSMContext
             "<b>Hướng dẫn chơi:</b>\n"
             "Xe Vượt đèn Đỏ là Thắng (X2,2 số tiền cược)\n"
             "Xe Dừng đèn Đỏ là Thua\n\n"
-            "Lệnh đặt cược: <code>vuot [số tiền]</code> hoặc <code>vuot all</code>"
+            "Lệnh đặt cược: <code>vuot [số tiền]</code> atau <code>vuot all</code>"
         )
     elif game_code == "game_rot_ruou":
         text = (
@@ -616,7 +616,7 @@ async def process_game_callback(callback: types.CallbackQuery, state: FSMContext
             "🎲 <b>BẦU CUA</b>\n\n"
             "🍐 BẦU  - Nếu xúc xắc ra số 1\n"
             "🦐 TÔM  - Nếu xúc xắc ra số 2\n"
-            "🦀 CUA  - Если xúc xắc ra số 3\n"
+            "🦀 CUA  - Nếu xúc xắc ra số 3\n"
             "🐟 CÁ   - Nếu xúc xắc ra số 4\n"
             "🐓 GÀ   - Nếu xúc xắc ra số 5\n"
             "🦌 NAI  - Nếu xúc xắc ra số 6\n\n"
@@ -624,7 +624,7 @@ async def process_game_callback(callback: types.CallbackQuery, state: FSMContext
             "Đặt tối đa 3 cửa trong 1 lệnh.\n\n"
             "👉 Tối thiểu là 2.000 và tối đa là 300.000\n\n"
             "👉 Cách chơi: [cửa 1] [cửa 2] [tiền cược / all]\n"
-            "VD: <code>BAU CUA CA 5000</code> hoặc <code>CUA all</code>"
+            "VD: <code>bau cua ca 5000</code> hoặc <code>cua all</code>"
         )
     elif game_code == "game_aviator":
         user_id = callback.from_user.id
@@ -1394,11 +1394,29 @@ async def auto_tai_xiu_loop():
             v3 = d3_msg.dice.value
             total_sum = v1 + v2 + v3
             
+            is_jackpot = (total_sum == 3 or total_sum == 18)
+            jackpot_winners_msg = ""
+
+            if is_jackpot:
+                jackpot_side = random.choice(['tai', 'xiu'])
+                jackpot_bets = {uid: b for uid, b in bets_current.items() if b["type"] == jackpot_side}
+                total_jp_bet = sum(b["amount"] for b in jackpot_bets.values())
+
+                if total_jp_bet > 0:
+                    win_details = []
+                    for uid, b in jackpot_bets.items():
+                        user_obj = get_user(uid)
+                        reward = current_jackpot * (b["amount"] / total_jp_bet)
+                        user_obj["balance"] += reward
+                        win_details.append(f"• <b>{b['name']}</b> nhận <b>+{reward:,.0f}đ</b>")
+                    jackpot_winners_msg = f"\n🏺💥 <b>NỔ HŨ CỬA {jackpot_side.upper()}! Trị giá {current_jackpot:,.0f}đ</b>\n" + "\n".join(win_details)
+                current_jackpot = 600000.0
+
             if force_result:
-                tx_result = 'tai' if force_result == 'tai' else 'xiu'
+                tx_result = force_result
                 force_result = None
             else:
-                tx_result = 'tai' if total_sum >= 11 else 'xiu'
+                tx_result = jackpot_side if is_jackpot else ('tai' if total_sum >= 11 else 'xiu')
                 
             cl_result = 'chan' if total_sum % 2 == 0 else 'le'
             
@@ -1425,7 +1443,8 @@ async def auto_tai_xiu_loop():
             summary_text = (
                 f"📊 <b>KẾT QUẢ PHIÊN #{current_session}</b> 📊\n\n"
                 f"🎲 Xúc xắc: <b>{v1} - {v2} - {v3}</b> (Tổng: <b>{total_sum}</b>)\n"
-                f"🏆 Kết quả: <b>{res_string} | {cl_string}</b>\n\n"
+                f"🏆 Kết quả: <b>{res_string} | {cl_string}</b>"
+                f"{jackpot_winners_msg}\n\n"
                 f"🏺 <b>Hũ hiện tại:</b> <b>{current_jackpot:,.0f} VND</b>\n"
                 f"📜 Lịch sử Tài Xỉu: <code>{' '.join(recent_tai_xiu[-10:])}</code>\n"
                 f"📜 Lịch sử Chẵn Lẻ: <code>{' '.join(recent_chan_le[-10:])}</code>\n"
@@ -1448,11 +1467,16 @@ async def catch_all_messages(message: types.Message):
     if not message.text:
         return
         
+    text = message.text.strip()
+    # BỎ QUA TẤT CẢ CÁC TIN NHẮN BẮT ĐẦU BẰNG DẤU GẠCH CHÉO (CHỨC NĂNG LỆNH CHÍNH /START, /SODU,...)
+    if text.startswith("/"):
+        return
+
     user_id = message.from_user.id
     name = message.from_user.full_name
     user = get_user(user_id, name)
-    text = message.text.lower().strip()
-    parts = text.split()
+    text_lower = text.lower()
+    parts = text_lower.split()
     if not parts:
         return
     cmd = parts[0]
@@ -1555,7 +1579,7 @@ async def catch_all_messages(message: types.Message):
             )
             await message.reply(loss_text)
         else:
-            await message.reply("⚠️ Cú pháp: <code>ngo [số tiền cược]</code> hoặc <code>ngo all</code>")
+            await message.reply("⚠️ Cú pháp: <code>ngo [số tiền cược]</code> atau <code>ngo all</code>")
         return
 
     # GAME BÓNG RỔ
@@ -1593,7 +1617,7 @@ async def catch_all_messages(message: types.Message):
                 )
             await message.reply(res_text)
         else:
-            await message.reply("⚠️ Cú pháp: <code>br [số tiền cược]</code> hoặc <code>br all</code>")
+            await message.reply("⚠️ Cú pháp: <code>br [số tiền cược]</code> atau <code>br all</code>")
         return
 
     # GAME BÓNG ĐÁ
@@ -1631,7 +1655,7 @@ async def catch_all_messages(message: types.Message):
                 )
             await message.reply(res_text)
         else:
-            await message.reply("⚠️ Cú pháp: <code>bd [số tiền cược]</code> hoặc <code>bd all</code>")
+            await message.reply("⚠️ Cú pháp: <code>bd [số tiền cược]</code> atau <code>bd all</code>")
         return
 
     # GAME BOWLING
@@ -1757,7 +1781,7 @@ async def catch_all_messages(message: types.Message):
                     f"• Bạn chọn: {choice_icons[user_choice]}\n"
                     f"• Bot chọn: {choice_icons[bot_choice]}\n"
                     f"💸 Số tiền thua: <b>-{amount:,.0f} VND</b>\n"
-                    f"💵 Số dư còn lại: <b>{user['balance']:,.0f} VND</b>"
+                    f"💵 Số dư hiện tại: <b>{user['balance']:,.0f} VND</b>"
                 )
             await message.reply(res_text)
         else:
@@ -1900,7 +1924,7 @@ async def catch_all_messages(message: types.Message):
                 selected_doors.append(bc_mapping[p])
 
         if not selected_doors or len(selected_doors) > 3:
-            await message.reply("⚠️ Đặt từ 1 đến tối đa 3 cửa! Ví dụ: <code>bau cua ca 5000</code> hoặc <code>cua all</code>")
+            await message.reply("⚠️ Đặt từ 1 đến tối đa 3 cửa! Ví dụ: <code>bau cua ca 5000</code> atau <code>cua all</code>")
             return
 
         if amt_str.lower() in ["all", "allin", "tattay"]:
