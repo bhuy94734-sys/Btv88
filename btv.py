@@ -24,7 +24,7 @@ from aiogram.exceptions import TelegramRetryAfter
 from aiohttp import web
 
 # --- CẤU HÌNH CƠ BẢN ---
-TOKEN = os.getenv("BOT_TOKEN", "8905955749:AAEMsBQnNzAvzun6vaMG__ZGMqJHrd6nrGg")
+TOKEN = os.getenv("BOT_TOKEN", "8905955749:AAGojrcwwf4tqe01Naog3k_fTjaLUayFliU")
 ADMIN_ID = 8312903264
 GROUP_CHAT_ID = None 
 
@@ -351,22 +351,36 @@ async def cmd_admin_set_hu(message: types.Message):
     except ValueError:
         await message.reply("❌ Số tiền không hợp lệ!")
 
+# --- HÀM HỖ TRỢ XỬ LÝ SỐ TIỀN CƯỢC (HỖ TRỢ CƯỢC ALL / ALL IN) ---
+def parse_bet_amount(arg_text: str, user_balance: float, min_amount: float = 1000.0):
+    arg_text = arg_text.lower().strip()
+    if arg_text in ["all", "allin", "tattay"]:
+        return user_balance
+    try:
+        amt = float(arg_text)
+        if amt >= min_amount:
+            return amt
+    except ValueError:
+        pass
+    return None
+
 # --- LỆNH XEM DANH SÁCH LỆNH CỦA NGƯỜI CHƠI ---
 @dp.message(Command("lenh"))
 async def cmd_user_lenh(message: types.Message):
     text = (
-        f"📜 <b>DANH SÁCH LỆNH DÀNH CHO NGƯỜI CHƠI</b>\n\n"
+        f"📜 <b>DANH SÁCH LỆNH DÀNH CHO NGƯỜI CHƠI</b>\n"
+        f"*(Hỗ trợ cược dồn, cược all / all in, không cần dấu `/`)*\n\n"
         f"🎲 <b>CƯỢC TÀI XỈU - CHẮN LẺ (TRONG NHÓM):</b>\n"
-        f"<b>Cược công khai:</b>\n"
-        f"• Lệnh cược Tài: <code>/Tai (số tiền cược)</code>\n"
-        f"• Lệnh cược Xỉu: <code>/Xiu (số tiền cược)</code>\n"
-        f"• Lệnh cược Chẵn: <code>/C (số tiền cược)</code>\n"
-        f"• Lệnh cược Lẻ: <code>/L (số tiền cược)</code>\n"
+        f"<b>Cược công khai (Hỗ trợ Cược Dồn & All):</b>\n"
+        f"• Lệnh cược Tài: <code>tai [số tiền]</code> hoặc <code>tai all</code>\n"
+        f"• Lệnh cược Xỉu: <code>xiu [số tiền]</code> hoặc <code>xiu all</code>\n"
+        f"• Lệnh cược Chẵn: <code>chan [số tiền]</code> / <code>c [số tiền]</code> / <code>c all</code>\n"
+        f"• Lệnh cược Lẻ: <code>le [số tiền]</code> / <code>l [số tiền]</code> / <code>l all</code>\n"
         f"<b>Cược ẩn danh:</b>\n"
-        f"• Lệnh cược Tài ẩn danh: <code>/TT (số tiền cược)</code>\n"
-        f"• Lệnh cược Xỉu ẩn danh: <code>/XX (số tiền cược)</code>\n"
-        f"• Lệnh cược Chẵn ẩn danh: <code>/CC (số tiền cược)</code>\n"
-        f"• Lệnh cược Lẻ ẩn danh: <code>/LL (số tiền cược)</code>\n\n"
+        f"• Lệnh cược Tài ẩn danh: <code>tt [số tiền]</code> / <code>tt all</code>\n"
+        f"• Lệnh cược Xỉu ẩn danh: <code>xx [số tiền]</code> / <code>xx all</code>\n"
+        f"• Lệnh cược Chẵn ẩn danh: <code>cc [số tiền]</code> / <code>cc all</code>\n"
+        f"• Lệnh cược Lẻ ẩn danh: <code>ll [số tiền]</code> / <code>ll all</code>\n\n"
         f"💳 <b>TÀI KHOẢN & GIAO DỊCH:</b>\n"
         f"• <code>/start</code> - Khởi động bot & mở menu chính\n"
         f"• <code>/sodu</code> - Kiểm tra số dư tài khoản\n"
@@ -374,18 +388,18 @@ async def cmd_user_lenh(message: types.Message):
         f"• <code>/rut (số tiền) (STK) (Ngân hàng)</code> - Rút tiền về ngân hàng\n"
         f"• <code>/code (MãCode)</code> - Nhập Giftcode nhận thưởng\n"
         f"• <code>/lenh</code> - Xem danh sách tất cả các lệnh người chơi\n\n"
-        f"🎮 <b>CÚ PHÁP CÁC GAME KHÁC:</b>\n"
-        f"• Bỏng ngô: <code>/Ngo (số tiền)</code>\n"
-        f"• Bóng rổ: <code>/BR (số tiền)</code>\n"
-        f"• Bóng đá: <code>/BD (số tiền)</code>\n"
-        f"• Bowling: <code>/Chan (số tiền)</code> | <code>/Le (số tiền)</code>\n"
-        f"• Phi tiêu: <code>/vong1</code> đến <code>/vong5 (số tiền)</code>\n"
-        f"• Kéo búa bao: <code>/Bua</code> | <code>/Keo</code> | <code>/Bao (số tiền)</code>\n"
-        f"• Cứu thương: <code>/cuu (số tiền)</code>\n"
-        f"• Đèn đỏ đèn xanh: <code>/vuot (số tiền)</code>\n"
-        f"• Rót rượu: <code>/rot (số tiền)</code>\n"
-        f"• Bầu cua: <code>[Cửa1] [Cửa2] [Cửa3] (số tiền)</code>\n"
-        f"• Máy Bay Avitor: <code>/Bay (số tiền cược)</code>"
+        f"🎮 <b>CÚ PHÁP CÁC GAME KHÁC (Hỗ trợ 'all'):</b>\n"
+        f"• Bỏng ngô: <code>ngo [số tiền]</code> / <code>ngo all</code>\n"
+        f"• Bóng rổ: <code>br [số tiền]</code> / <code>br all</code>\n"
+        f"• Bóng đá: <code>bd [số tiền]</code> / <code>bd all</code>\n"
+        f"• Bowling: <code>chan [số tiền]</code> / <code>le [số tiền]</code> (hoặc <code>all</code>)\n"
+        f"• Phi tiêu: <code>vong1 [số tiền]</code> đến <code>vong5 [số tiền]</code> (hoặc <code>all</code>)\n"
+        f"• Kéo búa bao: <code>bua</code> | <code>keo</code> | <code>bao [số tiền]</code> (hoặc <code>all</code>)\n"
+        f"• Cứu thương: <code>cuu [số tiền]</code> / <code>cuu all</code>\n"
+        f"• Đèn đỏ đèn xanh: <code>vuot [số tiền]</code> / <code>vuot all</code>\n"
+        f"• Rót rượu: <code>rot [số tiền]</code> / <code>rot all</code>\n"
+        f"• Bầu cua: <code>[cửa 1] [cửa 2] [số tiền/all]</code>\n"
+        f"• Máy Bay Avitor: <code>bay [số tiền]</code> / <code>bay all</code>"
     )
     await message.answer(text)
 
@@ -405,11 +419,11 @@ async def cmd_start(message: types.Message):
     text = (
         f"💎 <b>BTV88 CLUB - CỔNG GAME TÀI XỈU UY TÍN</b> 💎\n\n"
         f"Chào mừng <b>{message.from_user.full_name}</b> đến với hệ thống tự động!\n\n"
-        f"📜 <b>HƯỚNG DẪN CƯỢC NHANH TRONG NHÓM:</b>\n"
-        f"• Đặt Tài: <code>/Tai 10000</code>\n"
-        f"• Đặt Xỉu: <code>/Xiu 10000</code>\n"
-        f"• Đặt Chẵn: <code>/C 10000</code>\n"
-        f"• Đặt Lẻ: <code>/L 10000</code>\n\n"
+        f"📜 <b>HƯỚNG DẪN CƯỢC NHANH TRONG NHÓM (Không cần dấu `/`, hỗ trợ cược dồn & all):</b>\n"
+        f"• Đặt Tài: <code>tai 10000</code> hoặc <code>tai all</code>\n"
+        f"• Đặt Xỉu: <code>xiu 10000</code> hoặc <code>xiu all</code>\n"
+        f"• Đặt Chẵn: <code>chan 10000</code> hoặc <code>c all</code>\n"
+        f"• Đặt Lẻ: <code>le 10000</code> hoặc <code>l all</code>\n\n"
         f"💳 <b>LỆNH GIAO DỊCH:</b>\n"
         f"• Kiểm tra ví: <code>/sodu</code>\n"
         f"• Nạp tiền: <code>/nap</code>\n"
@@ -472,17 +486,17 @@ async def process_game_callback(callback: types.CallbackQuery, state: FSMContext
     if game_code == "game_tx":
         text = (
             "🎲 <b>GAME TÀI XỈU 3D</b>\n\n"
-            "📌 <b>Hướng dẫn chơi:</b> Tham gia vào nhóm chat để đặt cược cùng mọi người.\n"
-            "• Đặt Tài: <code>/Tai [số tiền]</code>\n"
-            "• Đặt Xỉu: <code>/Xiu [số tiền]</code>\n\n"
+            "📌 <b>Hướng dẫn chơi:</b> Nhắn trực tiếp trong nhóm chat (Hỗ trợ cược dồn & all).\n"
+            "• Đặt Tài: <code>tai [số tiền]</code> hoặc <code>tai all</code>\n"
+            "• Đặt Xỉu: <code>xiu [số tiền]</code> hoặc <code>xiu all</code>\n\n"
             "👉 <b>Link Room tung xúc xắc:</b> https://t.me/btv88club"
         )
     elif game_code == "game_cl":
         text = (
             "⚫️ <b>GAME CHẮN LẺ</b>\n\n"
-            "📌 <b>Hướng dẫn chơi:</b> Tham gia vào nhóm chat để đặt cược cùng mọi người.\n"
-            "• Đặt Chẵn: <code>/C [số tiền]</code>\n"
-            "• Đặt Lẻ: <code>/L [số tiền]</code>\n\n"
+            "📌 <b>Hướng dẫn chơi:</b> Nhắn trực tiếp trong nhóm chat (Hỗ trợ cược dồn & all).\n"
+            "• Đặt Chẵn: <code>chan [số tiền]</code> / <code>c all</code>\n"
+            "• Đặt Lẻ: <code>le [số tiền]</code> / <code>l all</code>\n\n"
             "👉 <b>Link Room tung chẵn lẻ:</b> https://t.me/btv88club"
         )
     elif game_code == "game_ngo":
@@ -492,7 +506,7 @@ async def process_game_callback(callback: types.CallbackQuery, state: FSMContext
             "• Ngô Đổ Tràn Ra Ngoài Là <b>THUA</b>\n"
             "• Ngô Không Tràn Ra Ngoài Là <b>THẮNG</b>\n"
             "• <b>Tỉ lệ trả thưởng:</b> Thắng x8,5 SỐ TIỀN CƯỢC\n\n"
-            "📌 <b>Lệnh đặt cược:</b> <code>/Ngo [số tiền cược]</code> (Cược tối thiểu 20,000đ)"
+            "📌 <b>Lệnh đặt cược:</b> <code>ngo [số tiền cược]</code> hoặc <code>ngo all</code> (Cược tối thiểu 20,000đ)"
         )
     elif game_code == "game_br":
         text = (
@@ -501,7 +515,7 @@ async def process_game_callback(callback: types.CallbackQuery, state: FSMContext
             "• Tung Bóng Vào Rổ Là <b>THẮNG</b>\n"
             "• Tung Bóng Ra Ngoài Là <b>THUA</b>\n"
             "• <b>Tỉ lệ trả thưởng:</b> x1,90 số tiền cược\n\n"
-            "📌 <b>Lệnh đặt cược:</b> <code>/BR [số tiền cược]</code> (Cược tối thiểu 10,000đ)"
+            "📌 <b>Lệnh đặt cược:</b> <code>br [số tiền cược]</code> hoặc <code>br all</code> (Cược tối thiểu 10,000đ)"
         )
     elif game_code == "game_bd":
         text = (
@@ -510,7 +524,7 @@ async def process_game_callback(callback: types.CallbackQuery, state: FSMContext
             "• Sút Vào Gôn Là <b>THẮNG</b>\n"
             "• Sút Ra Ngoài Là <b>THUA</b>\n"
             "• <b>Tỉ lệ trả thưởng:</b> x1,5 số tiền cược\n\n"
-            "📌 <b>Lệnh đặt cược:</b> <code>/BD [số tiền cược]</code> (Cược tối thiểu 10,000đ)"
+            "📌 <b>Lệnh đặt cược:</b> <code>bd [số tiền cược]</code> hoặc <code>bd all</code> (Cược tối thiểu 10,000đ)"
         )
     elif game_code == "game_bw":
         text = (
@@ -521,8 +535,8 @@ async def process_game_callback(callback: types.CallbackQuery, state: FSMContext
             "• Ném ra ngoài là <b>THUA</b>\n"
             "• <b>Tỉ lệ trả thưởng:</b> x1,90 số tiền cược\n\n"
             "📌 <b>Lệnh đặt cược:</b>\n"
-            "• Cược Chẵn: <code>/Chan [số tiền cược]</code>\n"
-            "• Cược Lẻ: <code>/Le [số tiền cược]</code>\n"
+            "• Cược Chẵn: <code>chan [số tiền]</code> hoặc <code>chan all</code>\n"
+            "• Cược Lẻ: <code>le [số tiền]</code> hoặc <code>le all</code>\n"
             "(Cược tối thiểu 10,000đ)"
         )
     elif game_code == "game_pt":
@@ -534,12 +548,12 @@ async def process_game_callback(callback: types.CallbackQuery, state: FSMContext
             "• Phi Tiêu Trúng Vòng Khác Là <b>THUA</b>\n"
             "• Phi Tiêu ra ngoài là <b>THUA</b>\n"
             "• <b>Tỉ lệ trả thưởng:</b> x2 số tiền cược\n\n"
-            "📌 <b>Lệnh đặt cược:</b>\n"
-            "• Vòng 1: <code>/vong1 [số tiền cược]</code>\n"
-            "• Vòng 2: <code>/vong2 [số tiền cược]</code>\n"
-            "• Vòng 3: <code>/vong3 [số tiền cược]</code>\n"
-            "• Vòng 4: <code>/vong4 [số tiền cược]</code>\n"
-            "• Vòng 5: <code>/vong5 [số tiền cược]</code>\n"
+            "📌 <b>Lệnh đặt cược (Hỗ trợ all):</b>\n"
+            "• Vòng 1: <code>vong1 [số tiền/all]</code>\n"
+            "• Vòng 2: <code>vong2 [số tiền/all]</code>\n"
+            "• Vòng 3: <code>vong3 [số tiền/all]</code>\n"
+            "• Vòng 4: <code>vong4 [số tiền/all]</code>\n"
+            "• Vòng 5: <code>vong5 [số tiền/all]</code>\n"
             "(Cược tối thiểu 10,000đ)"
         )
     elif game_code == "game_kbb":
@@ -551,10 +565,10 @@ async def process_game_callback(callback: types.CallbackQuery, state: FSMContext
             "• Chọn 🖐️(Bao): Thắng 👊 - Thua ✌️ - Hoà 🖐️\n"
             "• <b>Tỉ lệ trả thưởng khi thắng:</b> x1,95 số tiền cược\n"
             "• <b>Hoà:</b> Hoàn lại 50% số tiền cược\n\n"
-            "📌 <b>Lệnh đặt cược:</b>\n"
-            "• Chọn Búa 👊: <code>/Bua [số tiền cược]</code>\n"
-            "• Chọn Kéo ✌️: <code>/Keo [số tiền cược]</code>\n"
-            "• Chọn Bao 🖐️: <code>/Bao [số tiền cược]</code>\n"
+            "📌 <b>Lệnh đặt cược (Hỗ trợ all):</b>\n"
+            "• Chọn Búa 👊: <code>bua [số tiền/all]</code>\n"
+            "• Chọn Kéo ✌️: <code>keo [số tiền/all]</code>\n"
+            "• Chọn Bao 🖐️: <code>bao [số tiền/all]</code>\n"
             "(Cược tối thiểu 10,000đ)"
         )
     elif game_code == "game_slot_pg":
@@ -578,7 +592,7 @@ async def process_game_callback(callback: types.CallbackQuery, state: FSMContext
             "<b>Hướng dẫn chơi:</b>\n"
             "Xe cứu thương Đổ là Thắng (x3,5 tiền cược)\n"
             "Xe cứu thương Không Đổ là Thua\n\n"
-            "Lệnh đặt cược: <code>/cuu (số tiền cược)</code>"
+            "Lệnh đặt cược: <code>cuu [số tiền]</code> hoặc <code>cuu all</code>"
         )
     elif game_code == "game_den_do_den_xanh":
         text = (
@@ -586,7 +600,7 @@ async def process_game_callback(callback: types.CallbackQuery, state: FSMContext
             "<b>Hướng dẫn chơi:</b>\n"
             "Xe Vượt đèn Đỏ là Thắng (X2,2 số tiền cược)\n"
             "Xe Dừng đèn Đỏ là Thua\n\n"
-            "Lệnh đặt cược: <code>/vuot (số tiền cược)</code>"
+            "Lệnh đặt cược: <code>vuot [số tiền]</code> hoặc <code>vuot all</code>"
         )
     elif game_code == "game_rot_ruou":
         text = (
@@ -595,22 +609,22 @@ async def process_game_callback(callback: types.CallbackQuery, state: FSMContext
             "Rót rượu đầy cốc là Thắng (x2,5 số tiền cược)\n"
             "Rót rượu không đầy cốc là Thua\n"
             "Rót rượu tràn ra khỏi cốc là Nổ Hũ (x99 số tiền cược)\n\n"
-            "Lệnh đặt cược: <code>/rot (số tiền cược)</code>"
+            "Lệnh đặt cược: <code>rot [số tiền]</code> hoặc <code>rot all</code>"
         )
     elif game_code == "game_bau_cua":
         text = (
             "🎲 <b>BẦU CUA</b>\n\n"
             "🍐 BẦU  - Nếu xúc xắc ra số 1\n"
             "🦐 TÔM  - Nếu xúc xắc ra số 2\n"
-            "🦀 CUA  - Nếu xúc xắc ra số 3\n"
+            "🦀 CUA  - Если xúc xắc ra số 3\n"
             "🐟 CÁ   - Nếu xúc xắc ra số 4\n"
             "🐓 GÀ   - Nếu xúc xắc ra số 5\n"
-            "🦌 NAI  - Если xúc xắc ra số 6\n\n"
+            "🦌 NAI  - Nếu xúc xắc ra số 6\n\n"
             "Tỷ lệ: ra 1 viên x1.95 | ra 2 viên x3 | ra 3 viên x4\n"
             "Đặt tối đa 3 cửa trong 1 lệnh.\n\n"
             "👉 Tối thiểu là 2.000 và tối đa là 300.000\n\n"
-            "👉 Cách chơi: [cửa 1] [cửa 2] [cửa 3] [tiền cược]\n"
-            "VD: <code>BAU CUA CA 5000</code> hoặc <code>CUA 10000</code>"
+            "👉 Cách chơi: [cửa 1] [cửa 2] [tiền cược / all]\n"
+            "VD: <code>BAU CUA CA 5000</code> hoặc <code>CUA all</code>"
         )
     elif game_code == "game_aviator":
         user_id = callback.from_user.id
@@ -621,7 +635,7 @@ async def process_game_callback(callback: types.CallbackQuery, state: FSMContext
             "Máy Bay ✈️ - Bay càng cao X càng lớn\n\n"
             "📊 <b>Thống kê các phiên bay gần đây:</b>\n"
             f"{history_text}\n\n"
-            "📌 <b>Lệnh đặt cược:</b> <code>/Bay (số tiền cược)</code>"
+            "📌 <b>Lệnh đặt cược:</b> <code>bay [số tiền]</code> hoặc <code>bay all</code>"
         )
     else:
         text = "Mục game đang cập nhật!"
@@ -1036,19 +1050,18 @@ async def cmd_code(message: types.Message):
 
 # --- XỬ LÝ GAME MÁY BAY AVIATOR ---
 @dp.message(Command("bay"))
-@dp.message(F.text.startswith("/Bay"))
 async def cmd_game_aviator_bay(message: types.Message):
     user_id = message.from_user.id
     name = message.from_user.full_name
     user = get_user(user_id, name)
     parts = message.text.split()
-    if len(parts) < 2 or not parts[1].isdigit():
-        await message.reply("⚠️ Cú pháp: <code>/Bay (số tiền cược)</code>")
+    if len(parts) < 2:
+        await message.reply("⚠️ Cú pháp: <code>bay (số tiền cược)</code> hoặc <code>bay all</code>")
         return
     
-    amount = float(parts[1])
-    if amount < 1000:
-        await message.reply("⚠️ Số tiền cược tối thiểu là 1,000đ!")
+    amount = parse_bet_amount(parts[1], user["balance"], min_amount=1000.0)
+    if amount is None or amount < 1000:
+        await message.reply("⚠️ Số tiền cược tối thiểu là 1,000đ hoặc không hợp lệ!")
         return
     if user["balance"] < amount:
         await message.reply(f"❌ Số dư không đủ! Số dư hiện tại: {user['balance']:,.0f} VND")
@@ -1320,12 +1333,12 @@ async def auto_tai_xiu_loop():
                 GROUP_CHAT_ID,
                 f"💎 <b>BTV88 CLUB - PHIÊN #{current_session}</b> 💎\n"
                 f"🏺 <b>Hũ Jackpot:</b> <b>{current_jackpot:,.0f} VND</b>\n\n"
-                f"⏳ <b>Thời gian đặt cược còn lại:</b> <code>{total_seconds}s</code>\n\n"
+                f"⏳ <b>Thời gian đặt cược còn lại:</b> <code>{total_seconds}s</code> (Hỗ trợ cược dồn & all)\n\n"
                 f"📊 <b>Thống kê cược hiện tại:</b>\n"
                 f"• Cửa TÀI: <b>{sum_tai:,.0f} VND</b> | Cửa XỈU: <b>{sum_xiu:,.0f} VND</b>\n"
                 f"• Cửa CHẴN: <b>{sum_chan:,.0f} VND</b> | Cửa LẺ: <b>{sum_le:,.0f} VND</b>\n\n"
-                f"💡 <b>Lệnh cược Tài/Xỉu:</b> <code>/Tai [tiền]</code> | <code>/Xiu [tiền]</code> (Ẩn danh: <code>/TT</code> / <code>/XX</code>)\n"
-                f"💡 <b>Lệnh cược Chẵn/Lẻ:</b> <code>/Chan [tiền]</code> | <code>/Le [tiền]</code> (Ẩn danh: <code>/CC</code> / <code>/LL</code>)"
+                f"💡 <b>Lệnh cược Tài/Xỉu:</b> <code>tai [tiền/all]</code> | <code>xiu [tiền/all]</code> (Ẩn danh: <code>tt</code> / <code>xx</code>)\n"
+                f"💡 <b>Lệnh cược Chẵn/Lẻ:</b> <code>chan [tiền/all]</code> | <code>le [tiền/all]</code> (Ẩn danh: <code>cc</code> / <code>ll</code>)"
             )
             
             elapsed = 0
@@ -1345,12 +1358,12 @@ async def auto_tai_xiu_loop():
                         message_id=start_msg.message_id,
                         text=f"💎 <b>BTV88 CLUB - PHIÊN #{current_session}</b> 💎\n"
                              f"🏺 <b>Hũ Jackpot:</b> <b>{current_jackpot:,.0f} VND</b>\n\n"
-                             f"⏳ <b>Thời gian đặt cược còn lại:</b> <code>{remaining}s</code>\n\n"
+                             f"⏳ <b>Thời gian đặt cược còn lại:</b> <code>{remaining}s</code> (Hỗ trợ cược dồn & all)\n\n"
                              f"📊 <b>Thống kê cược hiện tại:</b>\n"
                              f"• Cửa TÀI: <b>{sum_tai:,.0f} VND</b> | Cửa XỈU: <b>{sum_xiu:,.0f} VND</b>\n"
                              f"• Cửa CHẴN: <b>{sum_chan:,.0f} VND</b> | Cửa LẺ: <b>{sum_le:,.0f} VND</b>\n\n"
-                             f"💡 <b>Lệnh cược Tài/Xỉu:</b> <code>/Tai [tiền]</code> | <code>/Xiu [tiền]</code> (Ẩn danh: <code>/TT</code> / <code>/XX</code>)\n"
-                             f"💡 <b>Lệnh cược Chẵn/Lẻ:</b> <code>/Chan [tiền]</code> | <code>/Le [tiền]</code> (Ẩn danh: <code>/CC</code> / <code>/LL</code>)"
+                             f"💡 <b>Lệnh cược Tài/Xỉu:</b> <code>tai [tiền/all]</code> | <code>xiu [tiền/all]</code> (Ẩn danh: <code>tt</code> / <code>xx</code>)\n"
+                             f"💡 <b>Lệnh cược Chẵn/Lẻ:</b> <code>chan [tiền/all]</code> | <code>le [tiền/all]</code> (Ẩn danh: <code>cc</code> / <code>ll</code>)"
                     )
                 except Exception:
                     pass
@@ -1440,41 +1453,60 @@ async def catch_all_messages(message: types.Message):
     user = get_user(user_id, name)
     text = message.text.lower().strip()
     parts = text.split()
+    if not parts:
+        return
+    cmd = parts[0]
 
     if message.chat.type in ["group", "supergroup"]:
         if GROUP_CHAT_ID != message.chat.id:
             GROUP_CHAT_ID = message.chat.id
             
-        if text.startswith(("/tai", "/xiu", "/c", "/l", "/chan", "/le", "/tt", "/xx", "/cc", "/ll")):
-            if len(parts) >= 2 and parts[1].isdigit():
-                cmd = parts[0].replace("/", "")
-                amount = float(parts[1])
-                
-                if amount < 1000: return
-                if user["balance"] < amount:
-                    await message.reply(f"❌ {name}, tài khoản không đủ tiền cược!")
-                    return
+        valid_tx_cl_cmds = ["tai", "xiu", "c", "l", "chan", "le", "tt", "xx", "cc", "ll"]
+        if cmd in valid_tx_cl_cmds:
+            if len(parts) < 2:
+                return
+            
+            amount = parse_bet_amount(parts[1], user["balance"], min_amount=1000.0)
+            if amount is None or amount < 1000:
+                return
+            if user["balance"] < amount:
+                await message.reply(f"❌ {name}, tài khoản không đủ tiền cược!")
+                return
                     
-                is_anonymous = cmd in ["tt", "xx", "cc", "ll"]
-                
-                if cmd in ["tai", "tt"]:
-                    bet_type = "tai"
-                elif cmd in ["xiu", "xx"]:
-                    bet_type = "xiu"
-                elif cmd in ["c", "chan", "cc"]:
-                    bet_type = "chan"
+            is_anonymous = cmd in ["tt", "xx", "cc", "ll"]
+            
+            if cmd in ["tai", "tt"]:
+                bet_type = "tai"
+            elif cmd in ["xiu", "xx"]:
+                bet_type = "xiu"
+            elif cmd in ["c", "chan", "cc"]:
+                bet_type = "chan"
+            else:
+                bet_type = "le"
+
+            user["balance"] -= amount
+            user["total_cuoc"] += amount
+
+            # --- TÍNH NĂNG CƯỢC DỒN ---
+            if user_id in bets_current:
+                if bets_current[user_id]["type"] == bet_type:
+                    bets_current[user_id]["amount"] += amount
+                    total_current_bet = bets_current[user_id]["amount"]
+                    await message.reply(f"➕ <b>{name}</b> cược dồn thêm <b>{amount:,.0f} VND</b>. Tổng cược cửa <b>{bet_type.upper()}</b>: <b>{total_current_bet:,.0f} VND</b>")
+                    return
                 else:
-                    bet_type = "le"
-
-                user["balance"] -= amount
-                user["total_cuoc"] += amount
-                bets_current[user_id] = {
-                    "type": bet_type, 
-                    "amount": amount, 
-                    "name": name, 
-                    "anonymous": is_anonymous
-                }
-
+                    old_type = bets_current[user_id]["type"]
+                    refund_amt = bets_current[user_id]["amount"]
+                    user["balance"] += refund_amt
+                    user["total_cuoc"] -= refund_amt
+                    
+                    user["balance"] -= amount
+                    user["total_cuoc"] += amount
+                    bets_current[user_id] = {"type": bet_type, "amount": amount, "name": name, "anonymous": is_anonymous}
+                    await message.reply(f"🔄 <b>{name}</b> đổi cửa từ {old_type.upper()} sang <b>{bet_type.upper()}</b> với số tiền <b>{amount:,.0f} VND</b> (Đã hoàn tiền cược cũ).")
+                    return
+            else:
+                bets_current[user_id] = {"type": bet_type, "amount": amount, "name": name, "anonymous": is_anonymous}
                 if amount > 100000:
                     try:
                         admin_alert = (
@@ -1495,20 +1527,18 @@ async def catch_all_messages(message: types.Message):
                         pass
                     await bot.send_message(
                         message.chat.id,
-                        f"🥷 <b>CƯỢC ẨN DANH THÀNH CÔNG</b>\n\n"
-                        f"🎯 <b>Cửa cược:</b> <b>{bet_type.upper()}</b>\n"
-                        f"💰 <b>Số tiền:</b> <b>{amount:,.0f} VND</b>"
+                        f"🥷 <b>{name}</b> cược ẩn danh <b>{amount:,.0f} VND</b> vào <b>{bet_type.upper()}</b>"
                     )
                 else:
                     await message.reply(f"✅ <b>{name}</b> cược <b>{amount:,.0f} VND</b> vào <b>{bet_type.upper()}</b>!")
             return
 
     # GAME BỎNG NGÔ
-    if text.startswith("/ngo") or text.startswith("ngo"):
-        if len(parts) >= 2 and parts[1].isdigit():
-            amount = float(parts[1])
-            if amount < 20000:
-                await message.reply("⚠️ Cược tối thiểu cho game Bỏng Ngô là 20,000đ!")
+    if cmd == "ngo":
+        if len(parts) >= 2:
+            amount = parse_bet_amount(parts[1], user["balance"], min_amount=20000.0)
+            if amount is None or amount < 20000:
+                await message.reply("⚠️ Cược tối thiểu cho game Bỏng Ngô là 20,000đ hoặc số dư không đủ!")
                 return
             if user["balance"] < amount:
                 await message.reply(f"❌ Số dư không đủ! Số dư hiện tại: {user['balance']:,.0f} VND. Vui lòng nạp thêm!")
@@ -1525,15 +1555,15 @@ async def catch_all_messages(message: types.Message):
             )
             await message.reply(loss_text)
         else:
-            await message.reply("⚠️ Cú pháp: <code>/Ngo [số tiền cược]</code>")
+            await message.reply("⚠️ Cú pháp: <code>ngo [số tiền cược]</code> hoặc <code>ngo all</code>")
         return
 
     # GAME BÓNG RỔ
-    if text.startswith("/br"):
-        if len(parts) >= 2 and parts[1].isdigit():
-            amount = float(parts[1])
-            if amount < 10000:
-                await message.reply("⚠️ Cược tối thiểu cho game Bóng Rổ là 10,000đ!")
+    if cmd == "br":
+        if len(parts) >= 2:
+            amount = parse_bet_amount(parts[1], user["balance"], min_amount=10000.0)
+            if amount is None or amount < 10000:
+                await message.reply("⚠️ Cược tối thiểu cho game Bóng Rổ là 10,000đ hoặc số dư không đủ!")
                 return
             if user["balance"] < amount:
                 await message.reply(f"❌ Số dư không đủ! Số dư hiện tại: {user['balance']:,.0f} VND. Vui lòng nạp thêm!")
@@ -1563,15 +1593,15 @@ async def catch_all_messages(message: types.Message):
                 )
             await message.reply(res_text)
         else:
-            await message.reply("⚠️ Cú pháp: <code>/BR [số tiền cược]</code>")
+            await message.reply("⚠️ Cú pháp: <code>br [số tiền cược]</code> hoặc <code>br all</code>")
         return
 
     # GAME BÓNG ĐÁ
-    if text.startswith("/bd"):
-        if len(parts) >= 2 and parts[1].isdigit():
-            amount = float(parts[1])
-            if amount < 10000:
-                await message.reply("⚠️ Cược tối thiểu cho game Bóng Đá là 10,000đ!")
+    if cmd == "bd":
+        if len(parts) >= 2:
+            amount = parse_bet_amount(parts[1], user["balance"], min_amount=10000.0)
+            if amount is None or amount < 10000:
+                await message.reply("⚠️ Cược tối thiểu cho game Bóng Đá là 10,000đ hoặc số dư không đủ!")
                 return
             if user["balance"] < amount:
                 await message.reply(f"❌ Số dư không đủ! Số dư hiện tại: {user['balance']:,.0f} VND. Vui lòng nạp thêm!")
@@ -1601,19 +1631,38 @@ async def catch_all_messages(message: types.Message):
                 )
             await message.reply(res_text)
         else:
-            await message.reply("⚠️ Cú pháp: <code>/BD [số tiền cược]</code>")
+            await message.reply("⚠️ Cú pháp: <code>bd [số tiền cược]</code> hoặc <code>bd all</code>")
         return
 
     # GAME BOWLING
-    if text.startswith(("/chan", "/le", "/c", "/l")) and len(parts) >= 2 and parts[1].isdigit():
-        pass # Đã xử lý ở trên
+    if cmd in ["chan", "le"] and len(parts) >= 2:
+        amount = parse_bet_amount(parts[1], user["balance"], min_amount=10000.0)
+        if amount is None or amount < 10000:
+            await message.reply("⚠️ Cược tối thiểu cho game Bowling là 10,000đ hoặc số dư không đủ!")
+            return
+        if user["balance"] < amount:
+            await message.reply(f"❌ Số dư không đủ! Số dư hiện tại: {user['balance']:,.0f} VND")
+            return
+        user["balance"] -= amount
+        user["total_cuoc"] += amount
+        dice = await bot.send_dice(chat_id=message.chat.id, emoji="🎳")
+        await asyncio.sleep(3.5)
+        val = dice.dice.value if dice.dice.value <= 6 else random.randint(1, 6)
+        res_type = "chan" if val in [2, 4, 6] else "le"
+        if res_type == cmd:
+            win = amount * 1.90
+            user["balance"] += win
+            await message.reply(f"🎉 Bowling THẮNG <b>+{win:,.0f} VND</b>!")
+        else:
+            await message.reply(f"❌ Bowling THUA <b>-{amount:,.0f} VND</b>!")
+        return
 
     # GAME PHI TIÊU
-    if text.startswith("/vong"):
-        if len(parts) >= 2 and parts[1].isdigit():
+    if cmd.startswith("vong"):
+        if len(parts) >= 2:
             try:
-                target_vong = int(parts[0].replace("/vong", ""))
-                amount = float(parts[1])
+                target_vong = int(cmd.replace("vong", ""))
+                amount = parse_bet_amount(parts[1], user["balance"], min_amount=10000.0)
             except ValueError:
                 return
 
@@ -1621,8 +1670,8 @@ async def catch_all_messages(message: types.Message):
                 await message.reply("⚠️ Vòng cược chỉ từ 1 đến 5!")
                 return
 
-            if amount < 10000:
-                await message.reply("⚠️ Cược tối thiểu cho game Phi Tiêu là 10,000đ!")
+            if amount is None or amount < 10000:
+                await message.reply("⚠️ Cược tối thiểu cho game Phi Tiêu là 10,000đ hoặc số dư không đủ!")
                 return
 
             if user["balance"] < amount:
@@ -1657,17 +1706,17 @@ async def catch_all_messages(message: types.Message):
                 )
             await message.reply(res_text)
         else:
-            await message.reply("⚠️ Cú pháp: <code>/vong1 [số tiền]</code> ... <code>/vong5 [số tiền]</code>")
+            await message.reply("⚠️ Cú pháp: <code>vong1 [số tiền/all]</code> ... <code>vong5 [số tiền/all]</code>")
         return
 
     # GAME KÉO BÚA BAO
-    if text.startswith(("/bua", "/keo", "/bao")):
-        if len(parts) >= 2 and parts[1].isdigit():
-            user_choice = parts[0].replace("/", "")
-            amount = float(parts[1])
+    if cmd in ["bua", "keo", "bao"]:
+        if len(parts) >= 2:
+            user_choice = cmd
+            amount = parse_bet_amount(parts[1], user["balance"], min_amount=10000.0)
 
-            if amount < 10000:
-                await message.reply("⚠️ Cược tối thiểu cho game Kéo Búa Bao là 10,000đ!")
+            if amount is None or amount < 10000:
+                await message.reply("⚠️ Cược tối thiểu cho game Kéo Búa Bao là 10,000đ hoặc số dư không đủ!")
                 return
 
             if user["balance"] < amount:
@@ -1712,15 +1761,15 @@ async def catch_all_messages(message: types.Message):
                 )
             await message.reply(res_text)
         else:
-            await message.reply("⚠️ Cú pháp: <code>/Bua [số tiền]</code>, <code>/Keo [số tiền]</code>, <code>/Bao [số tiền]</code>")
+            await message.reply("⚠️ Cú pháp: <code>bua [tiền/all]</code>, <code>keo [tiền/all]</code>, <code>bao [tiền/all]</code>")
         return
 
     # GAME CỨU THƯƠNG
-    if text.startswith("/cuu"):
-        if len(parts) >= 2 and parts[1].isdigit():
-            amount = float(parts[1])
-            if amount < 10000:
-                await message.reply("⚠️ Cược tối thiểu cho game Cứu Thương là 10,000đ!")
+    if cmd == "cuu":
+        if len(parts) >= 2:
+            amount = parse_bet_amount(parts[1], user["balance"], min_amount=10000.0)
+            if amount is None or amount < 10000:
+                await message.reply("⚠️ Cược tối thiểu cho game Cứu Thương là 10,000đ hoặc số dư không đủ!")
                 return
             if user["balance"] < amount:
                 await message.reply(f"❌ Số dư không đủ! Số dư hiện tại: {user['balance']:,.0f} VND. Vui lòng nạp thêm!")
@@ -1748,15 +1797,15 @@ async def catch_all_messages(message: types.Message):
                 )
             await message.reply(res_text)
         else:
-            await message.reply("⚠️ Cú pháp: <code>/cuu [số tiền]</code>")
+            await message.reply("⚠️ Cú pháp: <code>cuu [tiền/all]</code>")
         return
 
     # GAME ĐÈN ĐỎ ĐÈN XANH
-    if text.startswith("/vuot"):
-        if len(parts) >= 2 and parts[1].isdigit():
-            amount = float(parts[1])
-            if amount < 10000:
-                await message.reply("⚠️ Cược tối thiểu cho game Đèn Đỏ Đèn Xanh là 10,000đ!")
+    if cmd == "vuot":
+        if len(parts) >= 2:
+            amount = parse_bet_amount(parts[1], user["balance"], min_amount=10000.0)
+            if amount is None or amount < 10000:
+                await message.reply("⚠️ Cược tối thiểu cho game Đèn Đỏ Đèn Xanh là 10,000đ hoặc số dư không đủ!")
                 return
             if user["balance"] < amount:
                 await message.reply(f"❌ Số dư không đủ! Số dư hiện tại: {user['balance']:,.0f} VND. Vui lòng nạp thêm!")
@@ -1784,15 +1833,15 @@ async def catch_all_messages(message: types.Message):
                 )
             await message.reply(res_text)
         else:
-            await message.reply("⚠️ Cú pháp: <code>/vuot [số tiền]</code>")
+            await message.reply("⚠️ Cú pháp: <code>vuot [tiền/all]</code>")
         return
 
     # GAME RÓT RƯỢU
-    if text.startswith("/rot"):
-        if len(parts) >= 2 and parts[1].isdigit():
-            amount = float(parts[1])
-            if amount < 10000:
-                await message.reply("⚠️ Cược tối thiểu cho game Rót Rượu là 10,000đ!")
+    if cmd == "rot":
+        if len(parts) >= 2:
+            amount = parse_bet_amount(parts[1], user["balance"], min_amount=10000.0)
+            if amount is None or amount < 10000:
+                await message.reply("⚠️ Cược tối thiểu cho game Rót Rượu là 10,000đ hoặc số dư không đủ!")
                 return
             if user["balance"] < amount:
                 await message.reply(f"❌ Số dư không đủ! Số dư hiện tại: {user['balance']:,.0f} VND. Vui lòng nạp thêm!")
@@ -1829,7 +1878,7 @@ async def catch_all_messages(message: types.Message):
                 )
             await message.reply(res_text)
         else:
-            await message.reply("⚠️ Cú pháp: <code>/rot [số tiền]</code>")
+            await message.reply("⚠️ Cú pháp: <code>rot [tiền/all]</code>")
         return
 
     # GAME BẦU CUA
@@ -1843,19 +1892,27 @@ async def catch_all_messages(message: types.Message):
     }
     bc_names = {1: "🍐 BẦU", 2: "🦐 TÔM", 3: "🦀 CUA", 4: "🐟 CÁ", 5: "🐓 GÀ", 6: "🦌 NAI"}
 
-    if any(p in bc_mapping for p in parts[:-1]) and parts[-1].isdigit():
-        amount = float(parts[-1])
-        if amount < 2000 or amount > 300000:
-            await message.reply("⚠️ Tiền cược Bầu Cua từ 2,000đ đến 300,000đ!")
-            return
-
+    if any(p in bc_mapping for p in parts[:-1]) and (parts[-1].isdigit() or parts[-1].lower() in ["all", "allin", "tattay"]):
+        doors_text, amt_str = parts[:-1], parts[-1]
         selected_doors = []
-        for p in parts[:-1]:
+        for p in doors_text:
             if p in bc_mapping and bc_mapping[p] not in selected_doors:
                 selected_doors.append(bc_mapping[p])
 
         if not selected_doors or len(selected_doors) > 3:
-            await message.reply("⚠️ Đặt từ 1 đến tối đa 3 cửa! Ví dụ: <code>BAU CUA CA 5000</code>")
+            await message.reply("⚠️ Đặt từ 1 đến tối đa 3 cửa! Ví dụ: <code>bau cua ca 5000</code> hoặc <code>cua all</code>")
+            return
+
+        if amt_str.lower() in ["all", "allin", "tattay"]:
+            amount = user["balance"] / len(selected_doors)
+        else:
+            try:
+                amount = float(amt_str)
+            except ValueError:
+                return
+
+        if amount < 2000 or amount > 300000:
+            await message.reply("⚠️ Tiền cược mỗi cửa Bầu Cua từ 2,000đ đến 300,000đ!")
             return
 
         total_bet = amount * len(selected_doors)
