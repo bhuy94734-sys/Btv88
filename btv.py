@@ -399,7 +399,7 @@ async def cmd_user_lenh(message: types.Message):
         f"• Đèn đỏ đèn xanh: <code>vuot [số tiền]</code> / <code>vuot all</code>\n"
         f"• Rót rượu: <code>rot [số tiền]</code> / <code>rot all</code>\n"
         f"• Bầu cua: <code>[cửa 1] [cửa 2] [số tiền/all]</code>\n"
-        f"• Máy Bay Avitor: <code>bay [số tiền]</code> / <code>bay all</code>"
+        f"• Máy Bay Avitor: <code>/bay [số tiền]</code> / <code>/bay all</code>"
     )
     await message.answer(text)
 
@@ -635,7 +635,7 @@ async def process_game_callback(callback: types.CallbackQuery, state: FSMContext
             "Máy Bay ✈️ - Bay càng cao X càng lớn\n\n"
             "📊 <b>Thống kê các phiên bay gần đây:</b>\n"
             f"{history_text}\n\n"
-            "📌 <b>Lệnh đặt cược:</b> <code>bay [số tiền]</code> hoặc <code>bay all</code>"
+            "📌 <b>Lệnh đặt cược:</b> <code>/bay [số tiền]</code> hoặc <code>/bay all</code>"
         )
     else:
         text = "Mục game đang cập nhật!"
