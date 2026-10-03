@@ -43,19 +43,43 @@ class SlotPGState(StatesGroup):
 # --- BIẾN TRẠNG THÁI TRÒ CHƠI & KHUYẾN MÃI ---
 current_session = 105027
 current_jackpot = 600000.0
-recent_tai_xiu = ['🟢', '🔴', '🟢', '🔴', '🟢', '🔴', '🟢', '🔴', '🟢', '🔴', '🟢', '🔴']
-recent_chan_le = ['🔵', '🟡', '🔵', '🟡', '🔵', '🟡', '🔵', '🟡', '🔵', '🟡', '🔵', '🟡']
+recent_tai_xiu = [
+    '<emoji id=5411225014148014586>🔴</emoji>', 
+    '<emoji id=5267102644886853973>❤️</emoji>', 
+    '<emoji id=5411225014148014586>🔴</emoji>', 
+    '<emoji id=5267102644886853973>❤️</emoji>', 
+    '<emoji id=5411225014148014586>🔴</emoji>', 
+    '<emoji id=5267102644886853973>❤️</emoji>', 
+    '<emoji id=5411225014148014586>🔴</emoji>', 
+    '<emoji id=5267102644886853973>❤️</emoji>', 
+    '<emoji id=5411225014148014586>🔴</emoji>', 
+    '<emoji id=5267102644886853973>❤️</emoji>', 
+    '<emoji id=5411225014148014586>🔴</emoji>', 
+    '<emoji id=5267102644886853973>❤️</emoji>'
+]
+recent_chan_le = [
+    '<emoji id=5222079954421818267>🆒</emoji>', 
+    '<emoji id=5289944036881230584>⭐️</emoji>', 
+    '<emoji id=5222079954421818267>🆒</emoji>', 
+    '<emoji id=5289944036881230584>⭐️</emoji>', 
+    '<emoji id=5222079954421818267>🆒</emoji>', 
+    '<emoji id=5289944036881230584>⭐️</emoji>', 
+    '<emoji id=5222079954421818267>🆒</emoji>', 
+    '<emoji id=5289944036881230584>⭐️</emoji>', 
+    '<emoji id=5222079954421818267>🆒</emoji>', 
+    '<emoji id=5289944036881230584>⭐️</emoji>', 
+    '<emoji id=5222079954421818267>🆒</emoji>', 
+    '<emoji id=5289944036881230584>⭐️️</emoji>'
+]
 game_running = True
 
 promo_config = {"percent": 0.0, "expire_at": None}
 
-# Biến bổ sung cho tính năng mới
-force_result = None  # Cờ ép kết quả: 'tai' hoặc 'xiu'
+force_result = None  
 
-# --- TRẠNG THÁI GAME MÁY BAY AVIATOR ---
-aviator_user_turn = {}      # Lưu lượt cược của user (1 - 13)
-aviator_history = {}        # Lưu lịch sử phiên chơi của user
-aviator_active_games = {}   # Lưu thông tin phiên đang chạy của user
+aviator_user_turn = {}      
+aviator_history = {}        
+aviator_active_games = {}   
 
 users_db = {
     ADMIN_ID: {
@@ -109,11 +133,11 @@ async def set_bot_commands(bot: Bot):
 # --- BÀN PHÍM CHÍNH (REPLY KEYBOARD) ---
 main_menu_kb = ReplyKeyboardMarkup(
     keyboard=[
-        [KeyboardButton(text="👤 Tài Khoản Của Tôi"), KeyboardButton(text="🎮 Danh Sách Game")],
-        [KeyboardButton(text="💰 Số Dư"), KeyboardButton(text="💳 Nạp Tiền"), KeyboardButton(text="💸 Rút Tiền")],
-        [KeyboardButton(text="🤝 Giới Thiệu"), KeyboardButton(text="🏆 Top Nạp"), KeyboardButton(text="🔥 Top Cược")],
-        [KeyboardButton(text="📜 Lịch Sử Nạp"), KeyboardButton(text="📜 Lịch Sử Rút")],
-        [KeyboardButton(text="🎁 Nhập Code"), KeyboardButton(text="🎧 CSKH")]
+        [KeyboardButton(text="<emoji id=5217822164362739968>👑</emoji> Tài Khoản Của Tôi"), KeyboardButton(text="<emoji id=5319247469165433798>🎮</emoji> Danh Sách Game")],
+        [KeyboardButton(text="<emoji id=5409048419211682843>💵</emoji> Số Dư"), KeyboardButton(text="<emoji id=5472250091332993630>💳</emoji> Nạp Tiền"), KeyboardButton(text="<emoji id=5231449120635370684>💸</emoji> Rút Tiền")],
+        [KeyboardButton(text="<emoji id=5460795800101594035>🗣️</emoji> Giới Thiệu"), KeyboardButton(text="<emoji id=5440539497383087970>🥇</emoji> Top Nạp"), KeyboardButton(text="<emoji id=5456140674028019486>⚡️</emoji> Top Cược")],
+        [KeyboardButton(text="<emoji id=5305265301917549162>📎</emoji> Lịch Sử Nạp"), KeyboardButton(text="<emoji id=5305265301917549162>📎</emoji> Lịch Sử Rút")],
+        [KeyboardButton(text="<emoji id=5229064374403998351>🛍️</emoji> Nhập Code"), KeyboardButton(text="<emoji id=5256134032852278918>📡</emoji> CSKH")]
     ],
     resize_keyboard=True
 )
@@ -121,14 +145,14 @@ main_menu_kb = ReplyKeyboardMarkup(
 # --- MENU INLINE DANH SÁCH GAME ---
 def get_game_list_inline_kb():
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="Tài Xỉu 🎲", callback_data="game_tx"), InlineKeyboardButton(text="Chẵn Lẻ ⚫️", callback_data="game_cl")],
-        [InlineKeyboardButton(text="Bỏng Ngô 🍿", callback_data="game_ngo"), InlineKeyboardButton(text="Bóng Rổ 🏀", callback_data="game_br")],
-        [InlineKeyboardButton(text="Bóng Đá ⚽️", callback_data="game_bd"), InlineKeyboardButton(text="Bowling 🎳", callback_data="game_bw")],
-        [InlineKeyboardButton(text="Phi Tiêu 🎯", callback_data="game_pt"), InlineKeyboardButton(text="Kéo Búa Bao 🖐️✌️👊", callback_data="game_kbb")],
-        [InlineKeyboardButton(text="Quay Hũ PG 🎰", callback_data="game_slot_pg"), InlineKeyboardButton(text="Cứu Thương 🚑", callback_data="game_cuu_thuong")],
-        [InlineKeyboardButton(text="Đèn Đỏ Đèn Xanh🚙", callback_data="game_den_do_den_xanh"), InlineKeyboardButton(text="Rót Rượu 🍷", callback_data="game_rot_ruou")],
-        [InlineKeyboardButton(text="Bầu Cua 🦀", callback_data="game_bau_cua"), InlineKeyboardButton(text="Máy Bay Avitor 🛩️", callback_data="game_aviator")],
-        [InlineKeyboardButton(text="❌ Đóng Menu", callback_data="game_close")]
+        [InlineKeyboardButton(text="Tài Xỉu <emoji id=5256131095094652290>🎯</emoji>", callback_data="game_tx"), InlineKeyboardButton(text="Chẵn Lẻ <emoji id=5271837459783638319>↔️</emoji>", callback_data="game_cl")],
+        [InlineKeyboardButton(text="Bỏng Ngô <emoji id=5451882707875276247>🕯</emoji>", callback_data="game_ngo"), InlineKeyboardButton(text="Bóng Rổ <emoji id=5381975814415866082>🪙</emoji>", callback_data="game_br")],
+        [InlineKeyboardButton(text="Bóng Đá <emoji id=5240037474679398914>🚘</emoji>", callback_data="game_bd"), InlineKeyboardButton(text="Bowling <emoji id=5240242851425559175>☔️</emoji>", callback_data="game_bw")],
+        [InlineKeyboardButton(text="Phi Tiêu <emoji id=5256131095094652290>🎯</emoji>", callback_data="game_pt"), InlineKeyboardButton(text="Kéo Búa Bao <emoji id=5276239041052828276>🎭</emoji>", callback_data="game_kbb")],
+        [InlineKeyboardButton(text="Quay Hũ PG <emoji id=5222079954421818267>🆒</emoji>", callback_data="game_slot_pg"), InlineKeyboardButton(text="Cứu Thương <emoji id=5251203410396458957>🛡</emoji>", callback_data="game_cuu_thuong")],
+        [InlineKeyboardButton(text="Đèn Đỏ Đèn Xanh <emoji id=5240037474679398914>🚘</emoji>", callback_data="game_den_do_den_xanh"), InlineKeyboardButton(text="Rót Rượu <emoji id=5260567255145539253>🥂</emoji>", callback_data="game_rot_ruou")],
+        [InlineKeyboardButton(text="Bầu Cua <emoji id=5411089297476441876>🐻</emoji>", callback_data="game_bau_cua"), InlineKeyboardButton(text="Máy Bay Avitor <emoji id=5406745015365943482>⬇️</emoji>", callback_data="game_aviator")],
+        [InlineKeyboardButton(text="<emoji id=5210952531676504517>❌</emoji> Đóng Menu", callback_data="game_close")]
     ])
     return keyboard
 
@@ -166,24 +190,23 @@ async def welcome_new_member(message: types.Message):
         username_text = f"@{member.username}" if member.username else member.full_name
         
         welcome_text = (
-            f"🎉 <b>CHÀO MỪNG THÀNH VIÊN MỚI</b> 🎉\n\n"
-            f"🆔 <b>ID:</b> <code>{member.id}</code>\n"
-            f"👤 <b>Tên:</b> <b>{member.full_name}</b>\n"
-            f"💰 <b>Số dư tân thủ:</b> <b>{user['balance']:,.0f} VND</b>\n\n"
-            f"👑 <i>Chúc mừng đại gia <b>{username_text}</b> mới tham gia cổng game BTV88 Club! Chúc đại gia đại thắng!</i> 🚀"
+            f"<emoji id=5238188302279909462>🥰</emoji> <b>CHÀO MỪNG THÀNH VIÊN MỚI</b> <emoji id=5238188302279909462>🥰</emoji>\n\n"
+            f"<emoji id=5334544901428229844>ℹ️</emoji> <b>ID:</b> <code>{member.id}</code>\n"
+            f"<emoji id=5217822164362739968>👑</emoji> <b>Tên:</b> <b>{member.full_name}</b>\n"
+            f"<emoji id=5409048419211682843>💵</emoji> <b>Số dư tân thủ:</b> <b>{user['balance']:,.0f} VND</b>\n\n"
+            f"<emoji id=5415655814079723871>🔝</emoji> <i>Chúc mừng đại gia <b>{username_text}</b> mới tham gia cổng game BTV88 Club! Chúc đại gia đại thắng!</i> <emoji id=5456140674028019486>⚡️</emoji>"
         )
         await message.answer(welcome_text)
 
-# --- LỆNH ADMIN MỚI VÀ CŨ ---
 @dp.message(Command("checkid"))
 async def cmd_admin_checkid(message: types.Message):
     if message.from_user.id != ADMIN_ID:
         return
     filtered_users = {uid: udata for uid, udata in users_db.items() if udata.get("balance", 0) > 5000}
     if not filtered_users:
-        await message.reply("📋 Không có người chơi nào có số dư trên 5,000đ.")
+        await message.reply("<emoji id=5210952531676504517>❌</emoji> Không có người chơi nào có số dư trên 5,000đ.")
         return
-    text = f"📊 <b>THỐNG KÊ NGƯỜI CHƠI CÓ SỐ DƯ > 5,000đ ({len(filtered_users)} người):</b>\n\n"
+    text = f"<emoji id=5231200819986047254>📊</emoji> <b>THỐNG KÊ NGƯỜI CHƠI CÓ SỐ DƯ > 5,000đ ({len(filtered_users)} người):</b>\n\n"
     for uid, udata in filtered_users.items():
         text += f"• ID: <code>{uid}</code> - Tên: <b>{udata['name']}</b> - Số dư: <b>{udata['balance']:,.0f} VND</b>\n"
     await message.reply(text)
@@ -195,14 +218,14 @@ async def cmd_admin_kq(message: types.Message):
         return
     args = message.text.split()
     if len(args) < 2:
-        await message.reply("⚠️ Cú pháp: <code>/kq tai</code> hoặc <code>/kq xiu</code>")
+        await message.reply("<emoji id=5447644880824181073>⚠️</emoji> Cú pháp: <code>/kq tai</code> hoặc <code>/kq xiu</code>")
         return
     choice = args[1].lower()
     if choice in ["tai", "xiu"]:
         force_result = choice
-        await message.reply(f"✅ Đã thiết lập ép kết quả phiên tiếp theo ra: <b>{choice.upper()}</b>")
+        await message.reply(f"<emoji id=5206607081334906820>✔️</emoji> Đã thiết lập ép kết quả phiên tiếp theo ra: <b>{choice.upper()}</b>")
     else:
-        await message.reply("❌ Lựa chọn không hợp lệ! Chỉ dùng <code>tai</code> hoặc <code>xiu</code>.")
+        await message.reply("<emoji id=5210952531676504517>❌</emoji> Lựa chọn không hợp lệ! Chỉ dùng <code>tai</code> hoặc <code>xiu</code>.")
 
 @dp.message(Command("checkplayer"))
 async def cmd_admin_checkplayer(message: types.Message):
@@ -210,26 +233,26 @@ async def cmd_admin_checkplayer(message: types.Message):
         return
     args = message.text.split()
     if len(args) < 2:
-        await message.reply("⚠️ Cú pháp: <code>/checkplayer (id)</code>")
+        await message.reply("<emoji id=5447644880824181073>⚠️</emoji> Cú pháp: <code>/checkplayer (id)</code>")
         return
     try:
         target_id = int(args[1].replace("(", "").replace(")", ""))
         if target_id not in users_db:
-            await message.reply("❌ Không tìm thấy người chơi này trong hệ thống!")
+            await message.reply("<emoji id=5210952531676504517>❌</emoji> Không tìm thấy người chơi này trong hệ thống!")
             return
         target_user = users_db[target_id]
         info_text = (
-            f"🔍 <b>THÔNG TIN NGƯỜI CHƠI</b>\n\n"
-            f"🆔 <b>ID:</b> <code>{target_id}</code>\n"
-            f"👤 <b>Tên:</b> {target_user['name']}\n"
-            f"💰 <b>Số dư:</b> <b>{target_user['balance']:,.0f} VND</b>\n"
-            f"💳 <b>Tổng nạp:</b> {target_user['total_nap']:,.0f} VND\n"
-            f"🔥 <b>Tổng cược:</b> {target_user['total_cuoc']:,.0f} VND\n"
-            f"👥 <b>Số người đã mời:</b> {target_user.get('invite_count', 0)}"
+            f"<emoji id=5210956306952758910>👀</emoji> <b>THÔNG TIN NGƯỜI CHƠI</b>\n\n"
+            f"<emoji id=5334544901428229844>ℹ️</emoji> <b>ID:</b> <code>{target_id}</code>\n"
+            f"<emoji id=5217822164362739968>👑</emoji> <b>Tên:</b> {target_user['name']}\n"
+            f"<emoji id=5409048419211682843>💵</emoji> <b>Số dư:</b> <b>{target_user['balance']:,.0f} VND</b>\n"
+            f"<emoji id=5472250091332993630>💳</emoji> <b>Tổng nạp:</b> {target_user['total_nap']:,.0f} VND\n"
+            f"<emoji id=5456140674028019486>⚡️</emoji> <b>Tổng cược:</b> {target_user['total_cuoc']:,.0f} VND\n"
+            f"<emoji id=5460795800101594035>🗣️</emoji> <b>Số người đã mời:</b> {target_user.get('invite_count', 0)}"
         )
         await message.reply(info_text)
     except ValueError:
-        await message.reply("❌ ID không hợp lệ!")
+        await message.reply("<emoji id=5210952531676504517>❌</emoji> ID không hợp lệ!")
 
 @dp.message(Command("taocode", "tao_code"))
 async def cmd_admin_taocode_new(message: types.Message):
@@ -238,16 +261,16 @@ async def cmd_admin_taocode_new(message: types.Message):
     text = message.text.replace("(", " ").replace(")", " ")
     args = text.split()
     if len(args) < 4:
-        await message.reply("⚠️ Cú pháp: <code>/taocode (mã code) (số tiền) (số lượt dùng)</code>")
+        await message.reply("<emoji id=5447644880824181073>⚠️</emoji> Cú pháp: <code>/taocode (mã code) (số tiền) (số lượt dùng)</code>")
         return
     code = args[1].upper()
     try:
         amount = float(args[2])
         uses = int(args[3])
         active_codes[code] = {"amount": amount, "uses": uses, "expire_at": None}
-        await message.reply(f"🎁 Đã tạo Giftcode <b>{code}</b>: <b>{amount:,.0f} VND</b> ({uses} lượt dùng)")
+        await message.reply(f"<emoji id=5229064374403998351>🛍️</emoji> Đã tạo Giftcode <b>{code}</b>: <b>{amount:,.0f} VND</b> ({uses} lượt dùng)")
     except ValueError:
-        await message.reply("❌ Số tiền hoặc số lượt không hợp lệ!")
+        await message.reply("<emoji id=5210952531676504517>❌</emoji> Số tiền hoặc số lượt không hợp lệ!")
 
 @dp.message(Command("tbao"))
 async def cmd_admin_tbao(message: types.Message):
@@ -255,14 +278,14 @@ async def cmd_admin_tbao(message: types.Message):
         return
     text_content = message.text.split(maxsplit=1)
     if len(text_content) < 2:
-        await message.reply("⚠️ Cú pháp: <code>/tbao (nội dung)</code>")
+        await message.reply("<emoji id=5447644880824181073>⚠️</emoji> Cú pháp: <code>/tbao (nội dung)</code>")
         return
     
     notice_text = text_content[1].strip()
     if notice_text.startswith("(") and notice_text.endswith(")"):
         notice_text = notice_text[1:-1]
         
-    broadcast_msg = f"📢 <b>THÔNG BÁO TỪ HỆ THỐNG</b> 📢\n\n{notice_text}"
+    broadcast_msg = f"<emoji id=5256134032852278918>📡</emoji> <b>THÔNG BÁO TỪ HỆ THỐNG</b> <emoji id=5256134032852278918>📡</emoji>\n\n{notice_text}"
     
     count = 0
     for user_id in list(users_db.keys()):
@@ -279,7 +302,7 @@ async def cmd_admin_tbao(message: types.Message):
         except Exception:
             pass
             
-    await message.reply(f"✅ Đã gửi thông báo thành công tới {count} người dùng!")
+    await message.reply(f"<emoji id=5206607081334906820>✔️</emoji> Đã gửi thông báo thành công tới {count} người dùng!")
 
 @dp.message(Command("kmnap"))
 async def cmd_admin_kmnap(message: types.Message):
@@ -288,7 +311,7 @@ async def cmd_admin_kmnap(message: types.Message):
     text = message.text.replace("(", "").replace(")", "").replace("%", "").replace("x", "")
     args = text.split()
     if len(args) < 4:
-        await message.reply("⚠️ Cú pháp: <code>/kmnap (x3%) (00:00 14/09/2026)</code>")
+        await message.reply("<emoji id=5447644880824181073>⚠️️</emoji> Cú pháp: <code>/kmnap (x3%) (00:00 14/09/2026)</code>")
         return
     try:
         percent = float(args[1])
@@ -298,9 +321,9 @@ async def cmd_admin_kmnap(message: types.Message):
         promo_config["percent"] = percent
         promo_config["expire_at"] = expire_at
         
-        await message.reply(f"✅ Đã kích hoạt Khuyến Mãi Nạp <b>+{percent}%</b> đến <b>{expire_at.strftime('%H:%M %d/%m/%Y')}</b>")
+        await message.reply(f"<emoji id=5206607081334906820>✔️</emoji> Đã kích hoạt Khuyến Mãi Nạp <b>+{percent}%</b> đến <b>{expire_at.strftime('%H:%M %d/%m/%Y')}</b>")
     except Exception as e:
-        await message.reply(f"❌ Định dạng thời gian hoặc phần trăm không hợp lệ! Lỗi: {e}")
+        await message.reply(f"<emoji id=5210952531676504517>❌</emoji> Định dạng thời gian hoặc phần trăm không hợp lệ! Lỗi: {e}")
 
 @dp.message(Command("cong"))
 async def cmd_admin_cong(message: types.Message):
@@ -308,16 +331,16 @@ async def cmd_admin_cong(message: types.Message):
         return
     args = message.text.split()
     if len(args) < 3:
-        await message.reply("⚠️ Cú pháp: <code>/cong [User_ID] [Số_tiền]</code>")
+        await message.reply("<emoji id=5447644880824181073>⚠️</emoji> Cú pháp: <code>/cong [User_ID] [Số_tiền]</code>")
         return
     try:
         target_id = int(args[1])
         amount = float(args[2])
         target_user = get_user(target_id)
         target_user["balance"] += amount
-        await message.reply(f"✅ Đã cộng <b>{amount:,.0f} VND</b> cho ID <code>{target_id}</code>. Số dư mới: {target_user['balance']:,.0f} VND")
+        await message.reply(f"<emoji id=5206607081334906820>✔️</emoji> Đã cộng <b>{amount:,.0f} VND</b> cho ID <code>{target_id}</code>. Số dư mới: {target_user['balance']:,.0f} VND")
     except ValueError:
-        await message.reply("❌ ID hoặc số tiền không hợp lệ!")
+        await message.reply("<emoji id=5210952531676504517>❌</emoji> ID hoặc số tiền không hợp lệ!")
 
 @dp.message(Command("tru"))
 async def cmd_admin_tru(message: types.Message):
@@ -325,16 +348,16 @@ async def cmd_admin_tru(message: types.Message):
         return
     args = message.text.split()
     if len(args) < 3:
-        await message.reply("⚠️ Cú pháp: <code>/tru [User_ID] [Số_tiền]</code>")
+        await message.reply("<emoji id=5447644880824181073>⚠️</emoji> Cú pháp: <code>/tru [User_ID] [Số_tiền]</code>")
         return
     try:
         target_id = int(args[1])
         amount = float(args[2])
         target_user = get_user(target_id)
         target_user["balance"] = max(0.0, target_user["balance"] - amount)
-        await message.reply(f"✅ Đã trừ <b>{amount:,.0f} VND</b> của ID <code>{target_id}</code>. Số dư mới: {target_user['balance']:,.0f} VND")
+        await message.reply(f"<emoji id=5206607081334906820>✔️</emoji> Đã trừ <b>{amount:,.0f} VND</b> của ID <code>{target_id}</code>. Số dư mới: {target_user['balance']:,.0f} VND")
     except ValueError:
-        await message.reply("❌ ID hoặc số tiền không hợp lệ!")
+        await message.reply("<emoji id=5210952531676504517>❌</emoji> ID hoặc số tiền không hợp lệ!")
 
 @dp.message(Command("set_hu"))
 async def cmd_admin_set_hu(message: types.Message):
@@ -343,15 +366,14 @@ async def cmd_admin_set_hu(message: types.Message):
         return
     args = message.text.split()
     if len(args) < 2:
-        await message.reply("⚠️ Cú pháp: <code>/set_hu [Số_tiền]</code>")
+        await message.reply("<emoji id=5447644880824181073>⚠️</emoji> Cú pháp: <code>/set_hu [Số_tiền]</code>")
         return
     try:
         current_jackpot = float(args[1])
-        await message.reply(f"🏺 Đã cập nhật Hũ Jackpot thành: <b>{current_jackpot:,.0f} VND</b>")
+        await message.reply(f"<emoji id=5451882707875276247>🕯</emoji> Đã cập nhật Hũ Jackpot thành: <b>{current_jackpot:,.0f} VND</b>")
     except ValueError:
-        await message.reply("❌ Số tiền không hợp lệ!")
+        await message.reply("<emoji id=5210952531676504517>❌</emoji> Số tiền không hợp lệ!")
 
-# --- HÀM HỖ TRỢ XỬ LÝ SỐ TIỀN CƯỢC (HỖ TRỢ CƯỢC ALL / ALL IN) ---
 def parse_bet_amount(arg_text: str, user_balance: float, min_amount: float = 1000.0):
     arg_text = arg_text.lower().strip()
     if arg_text in ["all", "allin", "tattay"]:
@@ -364,13 +386,12 @@ def parse_bet_amount(arg_text: str, user_balance: float, min_amount: float = 100
         pass
     return None
 
-# --- LỆNH XEM DANH SÁCH LỆNH CỦA NGƯỜI CHƠI ---
 @dp.message(Command("lenh"))
 async def cmd_user_lenh(message: types.Message):
     text = (
-        f"📜 <b>DANH SÁCH LỆNH DÀNH CHO NGƯỜI CHƠI</b>\n"
+        f"<emoji id=5305265301917549162>📎</emoji> <b>DANH SÁCH LỆNH DÀNH CHO NGƯỜI CHƠI</b>\n"
         f"*(Hỗ trợ cược dồn, cược all / all in, không cần dấu `/`)*\n\n"
-        f"🎲 <b>CƯỢC TÀI XỈU - CHẮN LẺ (TRONG NHÓM):</b>\n"
+        f"<emoji id=5256131095094652290>🎯</emoji> <b>CƯỢC TÀI XỈU - CHẮN LẺ (TRONG NHÓM):</b>\n"
         f"<b>Cược công khai (Hỗ trợ Cược Dồn & All):</b>\n"
         f"• Lệnh cược Tài: <code>tai [số tiền]</code> hoặc <code>tai all</code>\n"
         f"• Lệnh cược Xỉu: <code>xiu [số tiền]</code> hoặc <code>xiu all</code>\n"
@@ -381,14 +402,14 @@ async def cmd_user_lenh(message: types.Message):
         f"• Lệnh cược Xỉu ẩn danh: <code>xx [số tiền]</code> / <code>xx all</code>\n"
         f"• Lệnh cược Chẵn ẩn danh: <code>cc [số tiền]</code> / <code>cc all</code>\n"
         f"• Lệnh cược Lẻ ẩn danh: <code>ll [số tiền]</code> / <code>ll all</code>\n\n"
-        f"💳 <b>TÀI KHOẢN & GIAO DỊCH:</b>\n"
+        f"<emoji id=5472250091332993630>💳</emoji> <b>TÀI KHOẢN & GIAO DỊCH:</b>\n"
         f"• <code>/start</code> - Khởi động bot & mở menu chính\n"
         f"• <code>/sodu</code> - Kiểm tra số dư tài khoản\n"
         f"• <code>/nap</code> - Tạo lệnh nạp tiền\n"
         f"• <code>/rut (số tiền) (STK) (Ngân hàng)</code> - Rút tiền về ngân hàng\n"
         f"• <code>/code (MãCode)</code> - Nhập Giftcode nhận thưởng\n"
         f"• <code>/lenh</code> - Xem danh sách tất cả các lệnh người chơi\n\n"
-        f"🎮 <b>CÚ PHÁP CÁC GAME KHÁC (Hỗ trợ 'all'):</b>\n"
+        f"<emoji id=5319247469165433798>🎮</emoji> <b>CÚ PHÁP CÁC GAME KHÁC (Hỗ trợ 'all'):</b>\n"
         f"• Bỏng ngô: <code>ngo [số tiền]</code> / <code>ngo all</code>\n"
         f"• Bóng rổ: <code>br [số tiền]</code> / <code>br all</code>\n"
         f"• Bóng đá: <code>bd [số tiền]</code> / <code>bd all</code>\n"
@@ -399,11 +420,10 @@ async def cmd_user_lenh(message: types.Message):
         f"• Đèn đỏ đèn xanh: <code>vuot [số tiền]</code> / <code>vuot all</code>\n"
         f"• Rót rượu: <code>rot [số tiền]</code> / <code>rot all</code>\n"
         f"• Bầu cua: <code>[cửa 1] [cửa 2] [số tiền/all]</code>\n"
-        f"• Máy Bay Avitor: <code>/bay [số tiền]</code> / <code>/bay all</code>"
+        f"• Máy Bay Avitor: <code>bay [số tiền]</code> / <code>bay all</code>"
     )
     await message.answer(text)
 
-# --- XỬ LÝ LỆNH NGƯỜI DÙNG & NÚT BẤM ---
 @dp.message(CommandStart())
 async def cmd_start(message: types.Message):
     global GROUP_CHAT_ID
@@ -417,14 +437,14 @@ async def cmd_start(message: types.Message):
         
     get_user(message.from_user.id, message.from_user.full_name, referrer_id)
     text = (
-        f"💎 <b>BTV88 CLUB - CỔNG GAME TÀI XỈU UY TÍN</b> 💎\n\n"
+        f"<emoji id=5217822164362739968>👑</emoji> <b>BTV88 CLUB - CỔNG GAME TÀI XỈU UY TÍN</b> <emoji id=5217822164362739968>👑</emoji>\n\n"
         f"Chào mừng <b>{message.from_user.full_name}</b> đến với hệ thống tự động!\n\n"
-        f"📜 <b>HƯỚNG DẪN CƯỢC NHANH TRONG NHÓM (Không cần dấu `/`, hỗ trợ cược dồn & all):</b>\n"
+        f"<emoji id=5334544901428229844>ℹ️</emoji> <b>HƯỚNG DẪN CƯỢC NHANH TRONG NHÓM (Không cần dấu `/`, hỗ trợ cược dồn & all):</b>\n"
         f"• Đặt Tài: <code>tai 10000</code> hoặc <code>tai all</code>\n"
         f"• Đặt Xỉu: <code>xiu 10000</code> hoặc <code>xiu all</code>\n"
         f"• Đặt Chẵn: <code>chan 10000</code> hoặc <code>c all</code>\n"
         f"• Đặt Lẻ: <code>le 10000</code> hoặc <code>l all</code>\n\n"
-        f"💳 <b>LỆNH GIAO DỊCH:</b>\n"
+        f"<emoji id=5472250091332993630>💳</emoji> <b>LỆNH GIAO DỊCH:</b>\n"
         f"• Kiểm tra ví: <code>/sodu</code>\n"
         f"• Nạp tiền: <code>/nap</code>\n"
         f"• Rút tiền: <code>/rut 200000 [SốTK] [NgânHàng]</code>\n"
@@ -432,7 +452,7 @@ async def cmd_start(message: types.Message):
     )
     await message.answer(text, reply_markup=main_menu_kb)
 
-@dp.message(F.text == "🤝 Giới Thiệu")
+@dp.message(F.text.contains("Giới Thiệu"))
 async def btn_referral(message: types.Message):
     user_id = message.from_user.id
     user = get_user(user_id, message.from_user.full_name)
@@ -440,37 +460,35 @@ async def btn_referral(message: types.Message):
     ref_link = f"https://t.me/{bot_info.username}?start={user_id}"
     
     text = (
-        f"🤝 <b>CHƯƠNG TRÌNH GIỚI THIỆU NHẬN HOA HỒNG 0.5%</b>\n\n"
-        f"🔗 <b>Link giới thiệu của bạn:</b>\n<code>{ref_link}</code>\n\n"
-        f"👥 <b>Số người đã mời được:</b> <b>{user.get('invite_count', 0)}</b> người\n"
-        f"💰 <b>Hoa hồng tích lũy:</b> <b>{user.get('ref_commission', 0.0):,.0f} VND</b>\n\n"
-        f"📌 <i>Khi bạn bè đăng ký qua link và nạp tiền, bạn sẽ nhận ngay 0.5% tiền nạp vào tài khoản!</i>"
+        f"<emoji id=5460795800101594035>🗣️</emoji> <b>CHƯƠNG TRÌNH GIỚI THIỆU NHẬN HOA HỒNG 0.5%</b>\n\n"
+        f"<emoji id=5271604874419647061>🔗</emoji> <b>Link giới thiệu của bạn:</b>\n<code>{ref_link}</code>\n\n"
+        f"<emoji id=5460795800101594035>🗣️</emoji> <b>Số người đã mời được:</b> <b>{user.get('invite_count', 0)}</b> người\n"
+        f"<emoji id=5409048419211682843>💵</emoji> <b>Hoa hồng tích lũy:</b> <b>{user.get('ref_commission', 0.0):,.0f} VND</b>\n\n"
+        f"<emoji id=5334544901428229844>ℹ️</emoji> <i>Khi bạn bè đăng ký qua link và nạp tiền, bạn sẽ nhận ngay 0.5% tiền nạp vào tài khoản!</i>"
     )
     await message.answer(text)
 
-@dp.message(F.text == "👤 Tài Khoản Của Tôi")
+@dp.message(F.text.contains("Tài Khoản Của Tôi"))
 async def btn_my_account(message: types.Message):
     user = get_user(message.from_user.id, message.from_user.full_name)
     username_text = f"@{message.from_user.username}" if message.from_user.username else "Chưa đặt"
     text = (
-        f"👤 <b>THÔNG TIN TÀI KHOẢN</b>\n\n"
-        f"🆔 <b>ID:</b> <code>{message.from_user.id}</code>\n"
-        f"📛 <b>Tên:</b> {user['name']}\n"
-        f"📱 <b>Username:</b> {username_text}\n"
-        f"💰 <b>Số dư hiện tại:</b> <b>{user['balance']:,.0f} VND</b>\n"
-        f"💳 <b>Tổng nạp:</b> {user['total_nap']:,.0f} VND\n"
-        f"🔥 <b>Tổng cược:</b> {user['total_cuoc']:,.0f} VND\n"
-        f"👥 <b>Đã mời:</b> {user.get('invite_count', 0)} người"
+        f"<emoji id=5217822164362739968>👑</emoji> <b>THÔNG TIN TÀI KHOẢN</b>\n\n"
+        f"<emoji id=5334544901428229844>ℹ️</emoji> <b>ID:</b> <code>{message.from_user.id}</code>\n"
+        f"<emoji id=5217822164362739968>👑</emoji> <b>Tên:</b> {user['name']}\n"
+        f"<emoji id=5271604874419647061>🔗</emoji> <b>Username:</b> {username_text}\n"
+        f"<emoji id=5409048419211682843>💵</emoji> <b>Số dư hiện tại:</b> <b>{user['balance']:,.0f} VND</b>\n"
+        f"<emoji id=5472250091332993630>💳</emoji> <b>Tổng nạp:</b> {user['total_nap']:,.0f} VND\n"
+        f"<emoji id=5456140674028019486>⚡️</emoji> <b>Tổng cược:</b> {user['total_cuoc']:,.0f} VND\n"
+        f"<emoji id=5460795800101594035>🗣️</emoji> <b>Đã mời:</b> {user.get('invite_count', 0)} người"
     )
     await message.answer(text)
 
-# --- XỬ LÝ NÚT DANH SÁCH GAME ---
-@dp.message(F.text == "🎮 Danh Sách Game")
+@dp.message(F.text.contains("Danh Sách Game"))
 async def btn_game_list(message: types.Message):
-    text = "🎮 <b>DANH SÁCH GAME CÓ SẴN BTV88 CLUB</b>\n\nBấm vào các nút bên dưới để xem hướng dẫn và cú pháp chơi từng game:"
+    text = "<emoji id=5319247469165433798>🎮</emoji> <b>DANH SÁCH GAME CÓ SẴN BTV88 CLUB</b>\n\nBấm vào các nút bên dưới để xem hướng dẫn và cú pháp chơi từng game:"
     await message.answer(text, reply_markup=get_game_list_inline_kb())
 
-# --- CALLBACK QUERY HANDLER CHO DANH SÁCH GAME ---
 @dp.callback_query(F.data.startswith("game_"))
 async def process_game_callback(callback: types.CallbackQuery, state: FSMContext):
     await callback.answer()
@@ -562,7 +580,7 @@ async def process_game_callback(callback: types.CallbackQuery, state: FSMContext
             "<b>Hướng dẫn chơi:</b>\n"
             "• Chọn ✌️(Kéo): Thắng 🖐️ - Thua 👊 - Hoà ✌️\n"
             "• Chọn 👊(Búa): Thắng ✌️ - Thua 🖐️ - Hoà 🖐️\n"
-            "• Chọn 🖐️(Bao): Thắng 👊 - Thua ✌️ - Hoà 🖐️\n"
+            "• Chọn 🖐️(Bao): Thắng 👊 - Thua ✌️ - Hoà 🖐️️\n"
             "• <b>Tỉ lệ trả thưởng khi thắng:</b> x1,95 số tiền cược\n"
             "• <b>Hoà:</b> Hoàn lại 50% số tiền cược\n\n"
             "📌 <b>Lệnh đặt cược (Hỗ trợ all):</b>\n"
@@ -635,7 +653,7 @@ async def process_game_callback(callback: types.CallbackQuery, state: FSMContext
             "Máy Bay ✈️ - Bay càng cao X càng lớn\n\n"
             "📊 <b>Thống kê các phiên bay gần đây:</b>\n"
             f"{history_text}\n\n"
-            "📌 <b>Lệnh đặt cược:</b> <code>/bay [số tiền]</code> hoặc <code>/bay all</code>"
+            "📌 <b>Lệnh đặt cược:</b> <code>bay [số tiền]</code> hoặc <code>bay all</code>"
         )
     else:
         text = "Mục game đang cập nhật!"
@@ -645,23 +663,22 @@ async def process_game_callback(callback: types.CallbackQuery, state: FSMContext
     except Exception as e:
         logging.error(f"Lỗi gửi tin nhắn callback: {e}")
 
-# --- XỬ LÝ NHẬP SỐ LƯỢT QUAY SLOT PG ---
 @dp.message(SlotPGState.waiting_for_spins)
 async def process_slot_spins_input(message: types.Message, state: FSMContext):
     if not message.text or not message.text.isdigit():
-        await message.reply("❌ Vui lòng nhập số lượt quay hợp lệ! Ví dụ: 5")
+        await message.reply("<emoji id=5210952531676504517>❌</emoji> Vui lòng nhập số lượt quay hợp lệ! Ví dụ: 5")
         return
     
     spins = int(message.text)
     if spins <= 0:
-        await message.reply("❌ Số lượt quay phải lớn hơn 0!")
+        await message.reply("<emoji id=5210952531676504517>❌</emoji> Số lượt quay phải lớn hơn 0!")
         return
 
     user = get_user(message.from_user.id, message.from_user.full_name)
     total_cost = spins * 1000.0
 
     if user["balance"] < total_cost:
-        await message.reply(f"❌ Số dư không đủ! Cần {total_cost:,.0f} VND cho {spins} lượt quay. Số dư hiện tại: {user['balance']:,.0f} VND")
+        await message.reply(f"<emoji id=5210952531676504517>❌</emoji> Số dư không đủ! Cần {total_cost:,.0f} VND cho {spins} lượt quay. Số dư hiện tại: {user['balance']:,.0f} VND")
         await state.clear()
         return
 
@@ -669,7 +686,7 @@ async def process_slot_spins_input(message: types.Message, state: FSMContext):
     user["balance"] -= total_cost
     user["total_cuoc"] += total_cost
 
-    await message.reply(f"🎰 Đã trừ <b>{total_cost:,.0f} VND</b> cho <b>{spins}</b> lượt quay PG Slot. Đang tiến hành quay...")
+    await message.reply(f"<emoji id=5222079954421818267>🆒</emoji> Đã trừ <b>{total_cost:,.0f} VND</b> cho <b>{spins}</b> lượt quay PG Slot. Đang tiến hành quay...")
 
     slot_outcomes = {
         1: ("BAR BAR BAR", 15.0),
@@ -692,25 +709,24 @@ async def process_slot_spins_input(message: types.Message, state: FSMContext):
             user["balance"] += win_amt
             await message.reply(f"🎉 Lượt quay {idx}/{spins}: Trúng <b>{name}</b>! Nhận thưởng <b>+{win_amt:,.0f} VND</b> (x{rate:.0f})")
         else:
-            await message.reply(f"❌ Lượt quay {idx}/{spins}: Thua! (Không ra 3 Nho, 3 Chanh, 3 Bar, 777)")
+            await message.reply(f"<emoji id=5210952531676504517>❌</emoji> Lượt quay {idx}/{spins}: Thua! (Không ra 3 Nho, 3 Chanh, 3 Bar, 777)")
 
     await message.reply(
         f"🏁 <b>KẾT QUẢ TỔNG CỘNG SLOT PG:</b>\n"
         f"• Tổng lượt quay: {spins}\n"
         f"• Tổng tiền cược: {total_cost:,.0f} VND\n"
         f"• Tổng tiền thắng: <b>+{total_won:,.0f} VND</b>\n"
-        f"💰 Số dư còn lại: <b>{user['balance']:,.0f} VND</b>"
+        f"<emoji id=5409048419211682843>💵</emoji> Số dư còn lại: <b>{user['balance']:,.0f} VND</b>"
     )
 
 @dp.message(Command("sodu"))
-@dp.message(F.text == "💰 Số Dư")
+@dp.message(F.text.contains("Số Dư"))
 async def cmd_sodu(message: types.Message):
     user = get_user(message.from_user.id, message.from_user.full_name)
-    await message.reply(f"💰 Số dư hiện tại của bạn: <b>{user['balance']:,.0f} VND</b>")
+    await message.reply(f"<emoji id=5409048419211682843>💵</emoji> Số dư hiện tại của bạn: <b>{user['balance']:,.0f} VND</b>")
 
-# --- NẠP TIỀN XÁC NHẬN BỞI ADMIN ---
 @dp.message(Command("nap"))
-@dp.message(F.text == "💳 Nạp Tiền")
+@dp.message(F.text.contains("Nạp Tiền"))
 async def cmd_nap(message: types.Message, state: FSMContext):
     args = message.text.split()
     if len(args) > 1 and args[1].isdigit():
@@ -718,12 +734,12 @@ async def cmd_nap(message: types.Message, state: FSMContext):
         await process_nap_amount(message, amount, state)
     else:
         await state.set_state(NapMoneyState.waiting_for_amount)
-        await message.reply("💵 Vui lòng nhập số tiền bạn muốn nạp (tối thiểu <b>10,000đ</b>):")
+        await message.reply("<emoji id=5409048419211682843>💵</emoji> Vui lòng nhập số tiền bạn muốn nạp (tối thiểu <b>10,000đ</b>):")
 
 @dp.message(NapMoneyState.waiting_for_amount)
 async def process_nap_input(message: types.Message, state: FSMContext):
     if not message.text or not message.text.isdigit():
-        await message.reply("❌ Vui lòng chỉ nhập số nguyên hợp lệ! Ví dụ: 50000")
+        await message.reply("<emoji id=5210952531676504517>❌</emoji> Vui lòng chỉ nhập số nguyên hợp lệ! Ví dụ: 50000")
         return
     
     amount = int(message.text)
@@ -731,7 +747,7 @@ async def process_nap_input(message: types.Message, state: FSMContext):
 
 async def process_nap_amount(message: types.Message, amount: int, state: FSMContext):
     if amount < 10000:
-        await message.reply("❌ Số tiền nạp tối thiểu là <b>10,000đ</b>! Vui lòng nhập lại số tiền hợp lệ:")
+        await message.reply("<emoji id=5210952531676504517>❌</emoji> Số tiền nạp tối thiểu là <b>10,000đ</b>! Vui lòng nhập lại số tiền hợp lệ:")
         return
 
     await state.clear()
@@ -748,15 +764,15 @@ async def process_nap_amount(message: types.Message, amount: int, state: FSMCont
     total_add = amount + bonus_promo
 
     qr_caption = (
-        f"💳 <b>HƯỚNG DẪN NẠP TIỀN</b> 💳\n\n"
-        f"📌 <b>BƯỚC 1:</b> Quét mã QR bên dưới hoặc chuyển khoản thủ công theo thông tin:\n"
+        f"<emoji id=5472250091332993630>💳</emoji> <b>HƯỚNG DẪN NẠP TIỀN</b> <emoji id=5472250091332993630>💳</emoji>\n\n"
+        f"<emoji id=5334544901428229844>ℹ️</emoji> <b>BƯỚC 1:</b> Quét mã QR bên dưới hoặc chuyển khoản thủ công theo thông tin:\n"
         f"• Ngân hàng: <b>ACB BANK</b>\n"
         f"• Số tài khoản: <code>27673211</code>\n"
         f"• Chủ tài khoản: <b>KHONG QUOC BAO</b>\n"
         f"• Số tiền: <b>{amount:,.0f} VND</b>\n"
         f"• Nội dung CK bắt buộc: <code>{content_nap}</code>\n\n"
-        f"📌 <b>BƯỚC 2:</b> Sau khi chuyển khoản xong, vui lòng chờ Admin xác nhận. Tiền sẽ được cộng tự động ngay khi được duyệt.\n"
-        f"⚠️ <i>Lưu ý: Chuyển đúng nội dung để lệnh được duyệt nhanh nhất!</i>"
+        f"<emoji id=5334544901428229844>ℹ️</emoji> <b>BƯỚC 2:</b> Sau khi chuyển khoản xong, vui lòng chờ Admin xác nhận. Tiền sẽ được cộng tự động ngay khi được duyệt.\n"
+        f"<emoji id=5447644880824181073>⚠️</emoji> <i>Lưu ý: Chuyển đúng nội dung để lệnh được duyệt nhanh nhất!</i>"
     )
     if bonus_promo > 0:
         qr_caption += f"\n\n🎁 <b>Khuyến mãi áp dụng:</b> +{promo_config['percent']}% ({bonus_promo:,.0f} VND) thành {total_add:,.0f} VND!"
@@ -768,7 +784,6 @@ async def process_nap_amount(message: types.Message, amount: int, state: FSMCont
     except Exception:
         await message.answer(qr_caption)
 
-    # Gửi yêu cầu duyệt đến Admin
     admin_kb = InlineKeyboardMarkup(inline_keyboard=[
         [
             InlineKeyboardButton(text="✅ Đồng ý cộng tiền", callback_data=f"nap_approve_{user_id}_{amount}_{total_add}_{content_nap}"),
@@ -809,7 +824,6 @@ async def process_nap_callback(callback: types.CallbackQuery):
         target_user["total_nap"] += amount
         target_user["balance"] += total_add
 
-        # Hoa hồng giới thiệu
         ref_id = target_user.get("referrer_id")
         if ref_id and ref_id in users_db:
             ref_bonus = amount * 0.005
@@ -826,10 +840,10 @@ async def process_nap_callback(callback: types.CallbackQuery):
         try:
             await bot.send_message(
                 target_id,
-                f"✅ <b>LỆNH NẠP TIỀN ĐÃ ĐƯỢC DUYỆT!</b>\n\n"
-                f"💰 Số tiền cộng: <b>+{total_add:,.0f} VND</b>\n"
-                f"💳 Số dư hiện tại: <b>{target_user['balance']:,.0f} VND</b>\n"
-                f"🚀 Chúc bạn chơi game may mắn và đại thắng!"
+                f"<emoji id=5206607081334906820>✔️</emoji> <b>LỆNH NẠP TIỀN ĐÃ ĐƯỢC DUYỆT!</b>\n\n"
+                f"<emoji id=5409048419211682843>💵</emoji> Số tiền cộng: <b>+{total_add:,.0f} VND</b>\n"
+                f"<emoji id=5472250091332993630>💳</emoji> Số dư hiện tại: <b>{target_user['balance']:,.0f} VND</b>\n"
+                f"<emoji id=5415655814079723871>🔝</emoji> Chúc bạn chơi game may mắn và đại thắng!"
             )
         except Exception:
             pass
@@ -838,9 +852,9 @@ async def process_nap_callback(callback: types.CallbackQuery):
             try:
                 await bot.send_message(
                     GROUP_CHAT_ID,
-                    f"✅ <b>THÔNG BÁO NẠP TIỀN THÀNH CÔNG</b>\n\n"
-                    f"🆔 <b>ID người chơi:</b> <code>{target_id}</code>\n"
-                    f"💰 <b>Số tiền nạp:</b> <b>{total_add:,.0f} VND</b>"
+                    f"<emoji id=5206607081334906820>✔️</emoji> <b>THÔNG BÁO NẠP TIỀN THÀNH CÔNG</b>\n\n"
+                    f"<emoji id=5334544901428229844>ℹ️</emoji> <b>ID người chơi:</b> <code>{target_id}</code>\n"
+                    f"<emoji id=5409048419211682843>💵</emoji> <b>Số tiền nạp:</b> <b>{total_add:,.0f} VND</b>"
                 )
             except Exception:
                 pass
@@ -857,7 +871,7 @@ async def process_nap_callback(callback: types.CallbackQuery):
         try:
             await bot.send_message(
                 target_id,
-                f"❌ <b>LỆNH NẠP TIỀN BỊ TỪ CHỐI!</b>\n\n"
+                f"<emoji id=5210952531676504517>❌</emoji> <b>LỆNH NẠP TIỀN BỊ TỪ CHỐI!</b>\n\n"
                 f"Yêu cầu nạp <b>{amount:,.0f} VND</b> của bạn đã bị Admin từ chối.\n"
                 f"Vui lòng liên hệ CSKH nếu có thắc mắc!"
             )
@@ -870,7 +884,7 @@ async def process_nap_callback(callback: types.CallbackQuery):
         await callback.answer("❌ Đã từ chối lệnh nạp!")
 
 @dp.message(Command("rut"))
-@dp.message(F.text == "💸 Rút Tiền")
+@dp.message(F.text.contains("Rút Tiền"))
 async def cmd_rut(message: types.Message):
     args = message.text.split(maxsplit=3)
     user_id = message.from_user.id
@@ -885,16 +899,16 @@ async def cmd_rut(message: types.Message):
         amount = float(args[1])
         stk, bank = args[2], args[3]
     except ValueError:
-        await message.reply("❌ Số tiền không hợp lệ.")
+        await message.reply("<emoji id=5210952531676504517>❌</emoji> Số tiền không hợp lệ.")
         return
         
     if user["balance"] < amount:
-        await message.reply(f"❌ Số dư không đủ! Số dư hiện tại: {user['balance']:,.0f} VND")
+        await message.reply(f"<emoji id=5210952531676504517>❌</emoji> Số dư không đủ! Số dư hiện tại: {user['balance']:,.0f} VND")
         return
         
     user["balance"] -= amount
     user["history_rut"].append(f"Rút {amount:,.0f} VND -> STK: {stk} ({bank})")
-    await message.reply(f"✅ Đã tạo lệnh rút <b>{amount:,.0f} VND</b> về TK <code>{stk} ({bank})</code> thành công!")
+    await message.reply(f"<emoji id=5206607081334906820>✔️</emoji> Đã tạo lệnh rút <b>{amount:,.0f} VND</b> về TK <code>{stk} ({bank})</code> thành công!")
 
     admin_kb = InlineKeyboardMarkup(inline_keyboard=[
         [
@@ -911,7 +925,7 @@ async def cmd_rut(message: types.Message):
             f"💸 Số tiền rút: <b>{amount:,.0f} VND</b>\n"
             f"🏦 STK: <code>{stk}</code>\n"
             f"🏛️ Ngân hàng: <b>{bank}</b>\n"
-            f"💰 Số dư còn lại: {user['balance']:,.0f} VND"
+            f"<emoji id=5409048419211682843>💵</emoji> Số dư còn lại: {user['balance']:,.0f} VND"
         )
         await bot.send_message(ADMIN_ID, admin_notice, reply_markup=admin_kb)
     except Exception as e:
@@ -932,9 +946,9 @@ async def process_rut_callback(callback: types.CallbackQuery):
         try:
             await bot.send_message(
                 target_id,
-                f"✅ <b>LỆNH RÚT TIỀN ĐÃ ĐƯỢC DUYỆT!</b>\n\n"
-                f"💸 Số tiền rút: <b>{amount:,.0f} VND</b>\n"
-                f"🚀 Tiền đã được chuyển vào tài khoản của bạn!"
+                f"<emoji id=5206607081334906820>✔️</emoji> <b>LỆNH RÚT TIỀN ĐÃ ĐƯỢC DUYỆT!</b>\n\n"
+                f"<emoji id=5231449120635370684>💸</emoji> Số tiền rút: <b>{amount:,.0f} VND</b>\n"
+                f"<emoji id=5415655814079723871>🔝</emoji> Tiền đã được chuyển vào tài khoản của bạn!"
             )
         except Exception:
             pass
@@ -943,9 +957,9 @@ async def process_rut_callback(callback: types.CallbackQuery):
             try:
                 await bot.send_message(
                     GROUP_CHAT_ID,
-                    f"✅ <b>THÔNG BÁO RÚT TIỀN THÀNH CÔNG</b>\n\n"
-                    f"🆔 <b>ID người chơi:</b> <code>{target_id}</code>\n"
-                    f"💸 <b>Số tiền rút:</b> <b>{amount:,.0f} VND</b>"
+                    f"<emoji id=5206607081334906820>✔️</emoji> <b>THÔNG BÁO RÚT TIỀN THÀNH CÔNG</b>\n\n"
+                    f"<emoji id=5334544901428229844>ℹ️</emoji> <b>ID người chơi:</b> <code>{target_id}</code>\n"
+                    f"<emoji id=5231449120635370684>💸</emoji> <b>Số tiền rút:</b> <b>{amount:,.0f} VND</b>"
                 )
             except Exception:
                 pass
@@ -961,7 +975,7 @@ async def process_rut_callback(callback: types.CallbackQuery):
         try:
             await bot.send_message(
                 target_id,
-                f"❌ <b>LỆNH RÚT TIỀN BỊ TỪ CHỐI!</b>\n\n"
+                f"<emoji id=5210952531676504517>❌</emoji> <b>LỆNH RÚT TIỀN BỊ TỪ CHỐI!</b>\n\n"
                 f"Lệnh rút <b>{amount:,.0f} VND</b> của bạn đã bị từ chối và tiền đã được hoàn về ví."
             )
         except Exception:
@@ -972,72 +986,72 @@ async def process_rut_callback(callback: types.CallbackQuery):
         )
         await callback.answer("❌ Đã từ chối lệnh rút!")
 
-@dp.message(F.text == "🏆 Top Nạp")
+@dp.message(F.text.contains("Top Nạp"))
 async def btn_top_nap(message: types.Message):
     sorted_users = sorted(users_db.items(), key=lambda x: x[1]["total_nap"], reverse=True)[:5]
-    text = "🏆 <b>BẢNG XẾP HẠNG TOP NẠP</b> 🏆\n\n"
+    text = "<emoji id=5440539497383087970>🥇</emoji> <b>BẢNG XẾP HẠNG TOP NẠP</b> <emoji id=5440539497383087970>🥇</emoji>\n\n"
     for idx, (uid, udata) in enumerate(sorted_users, 1):
         text += f"{idx}. <b>{udata['name']}</b>: {udata['total_nap']:,.0f} VND\n"
     await message.answer(text)
 
-@dp.message(F.text == "🔥 Top Cược")
+@dp.message(F.text.contains("Top Cược"))
 async def btn_top_cuoc(message: types.Message):
     sorted_users = sorted(users_db.items(), key=lambda x: x[1]["total_cuoc"], reverse=True)[:5]
-    text = "🔥 <b>BẢNG XẾP HẠNG TOP CƯỢC</b> 🔥\n\n"
+    text = "<emoji id=5456140674028019486>⚡️</emoji> <b>BẢNG XẾP HẠNG TOP CƯỢC</b> <emoji id=5456140674028019486>⚡️</emoji>\n\n"
     for idx, (uid, udata) in enumerate(sorted_users, 1):
         text += f"{idx}. <b>{udata['name']}</b>: {udata['total_cuoc']:,.0f} VND\n"
     await message.answer(text)
 
-@dp.message(F.text == "📜 Lịch Sử Nạp")
+@dp.message(F.text.contains("Lịch Sử Nạp"))
 async def btn_history_nap(message: types.Message):
     user = get_user(message.from_user.id, message.from_user.full_name)
     if not user["history_nap"]:
         await message.answer("📜 Bạn chưa có lịch sử nạp tiền.")
         return
-    text = "💳 <b>LỊCH SỬ NẠP TIỀN GẦN ĐÂY:</b>\n\n" + "\n".join([f"• {item}" for item in user["history_nap"][-5:]])
+    text = "<emoji id=5472250091332993630>💳</emoji> <b>LỊCH SỬ NẠP TIỀN GẦN ĐÂY:</b>\n\n" + "\n".join([f"• {item}" for item in user["history_nap"][-5:]])
     await message.answer(text)
 
-@dp.message(F.text == "📜 Lịch Sử Rút")
+@dp.message(F.text.contains("Lịch Sử Rút"))
 async def btn_history_rut(message: types.Message):
     user = get_user(message.from_user.id, message.from_user.full_name)
     if not user["history_rut"]:
         await message.answer("📜 Bạn chưa có lịch sử rút tiền.")
         return
-    text = "💸 <b>LỊCH SỬ RÚT TIỀN GẦN ĐÂY:</b>\n\n" + "\n".join([f"• {item}" for item in user["history_rut"][-5:]])
+    text = "<emoji id=5231449120635370684>💸</emoji> <b>LỊCH SỬ RÚT TIỀN GẦN ĐÂY:</b>\n\n" + "\n".join([f"• {item}" for item in user["history_rut"][-5:]])
     await message.answer(text)
 
-@dp.message(F.text == "🎧 CSKH")
+@dp.message(F.text.contains("CSKH"))
 async def btn_cskh(message: types.Message):
     text = (
-        "🎧 <b>MỌI VẤN ĐỀ VUI LÒNG LIÊN HỆ:</b>\n\n"
+        "<emoji id=5256134032852278918>📡</emoji> <b>MỌI VẤN ĐỀ VUI LÒNG LIÊN HỆ:</b>\n\n"
         "<b>CSKH:</b> @cskhbtv88club"
     )
     await message.answer(text)
 
 @dp.message(Command("code"))
-@dp.message(F.text == "🎁 Nhập Code")
+@dp.message(F.text.contains("Nhập Code"))
 async def cmd_code(message: types.Message):
     args = message.text.split()
     if len(args) < 2:
-        await message.reply("⚠️ Cú pháp: <code>/code [MãCode]</code>")
+        await message.reply("<emoji id=5447644880824181073>⚠️</emoji> Cú pháp: <code>/code [MãCode]</code>")
         return
     code = args[1].upper()
     user = get_user(message.from_user.id, message.from_user.full_name)
     
     if code not in active_codes:
-        await message.reply("❌ Mã Giftcode không tồn tại hoặc đã hết hạn!")
+        await message.reply("<emoji id=5210952531676504517>❌</emoji> Mã Giftcode không tồn tại hoặc đã hết hạn!")
         return
         
     gift = active_codes[code]
     
     if gift.get("expire_at") and datetime.now() > gift["expire_at"]:
         del active_codes[code]
-        await message.reply("❌ Mã Giftcode này đã quá thời gian sử dụng!")
+        await message.reply("<emoji id=5210952531676504517>❌</emoji> Mã Giftcode này đã quá thời gian sử dụng!")
         return
 
     if gift["uses"] <= 0:
         del active_codes[code]
-        await message.reply("❌ Mã Giftcode này đã được sử dụng hết lượt!")
+        await message.reply("<emoji id=5210952531676504517>❌</emoji> Mã Giftcode này đã được sử dụng hết lượt!")
         return
 
     user["balance"] += gift["amount"]
@@ -1046,9 +1060,8 @@ async def cmd_code(message: types.Message):
     if gift["uses"] <= 0:
         del active_codes[code]
 
-    await message.reply(f"🎁 Bạn nhận được <b>{gift['amount']:,.0f} VND</b> từ Giftcode <code>{code}</code>!")
+    await message.reply(f"<emoji id=5229064374403998351>🛍️</emoji> Bạn nhận được <b>{gift['amount']:,.0f} VND</b> từ Giftcode <code>{code}</code>!")
 
-# --- XỬ LÝ GAME MÁY BAY AVIATOR ---
 @dp.message(Command("bay"))
 async def cmd_game_aviator_bay(message: types.Message):
     user_id = message.from_user.id
@@ -1056,19 +1069,19 @@ async def cmd_game_aviator_bay(message: types.Message):
     user = get_user(user_id, name)
     parts = message.text.split()
     if len(parts) < 2:
-        await message.reply("⚠️ Cú pháp: <code>bay (số tiền cược)</code> hoặc <code>bay all</code>")
+        await message.reply("<emoji id=5447644880824181073>⚠️</emoji> Cú pháp: <code>bay (số tiền cược)</code> hoặc <code>bay all</code>")
         return
     
     amount = parse_bet_amount(parts[1], user["balance"], min_amount=1000.0)
     if amount is None or amount < 1000:
-        await message.reply("⚠️ Số tiền cược tối thiểu là 1,000đ hoặc không hợp lệ!")
+        await message.reply("<emoji id=5447644880824181073>⚠️</emoji> Số tiền cược tối thiểu là 1,000đ hoặc không hợp lệ!")
         return
     if user["balance"] < amount:
-        await message.reply(f"❌ Số dư không đủ! Số dư hiện tại: {user['balance']:,.0f} VND")
+        await message.reply(f"<emoji id=5210952531676504517>❌</emoji> Số dư không đủ! Số dư hiện tại: {user['balance']:,.0f} VND")
         return
 
     if user_id in aviator_active_games and aviator_active_games[user_id].get("active", False):
-        await message.reply("⚠️ Bạn đang có một phiên bay đang diễn ra, vui lòng chờ phiên kết thúc!")
+        await message.reply("<emoji id=5447644880824181073>⚠️</emoji> Bạn đang có một phiên bay đang diễn ra, vui lòng chờ phiên kết thúc!")
         return
 
     user["balance"] -= amount
@@ -1104,8 +1117,8 @@ async def cmd_game_aviator_bay(message: types.Message):
 
     aviator_user_turn[user_id] = 1 if turn >= 13 else turn + 1
 
-    await bot.send_message(message.chat.id, "🛩️")
-    await message.reply("🚀 Máy bay bắt đầu cất cánh! Chúc bạn may mắn!")
+    await bot.send_message(message.chat.id, "<emoji id=5406745015365943482>⬇️</emoji>")
+    await message.reply("<emoji id=5415655814079723871>🔝</emoji> Máy bay bắt đầu cất cánh! Chúc bạn may mắn!")
 
     stop_kb = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="🛑 DỪNG BAY", callback_data=f"aviator_stop_{user_id}")]
@@ -1113,9 +1126,9 @@ async def cmd_game_aviator_bay(message: types.Message):
 
     status_msg = await bot.send_message(
         message.chat.id,
-        f"🛩️ <b>MÁY BAY ĐANG BAY...</b>\n\n"
-        f"💰 Số tiền cược: <b>{amount:,.0f} VND</b>\n"
-        f"📈 Hệ số x hiện tại: <b>x0.00</b>",
+        f"<emoji id=5406745015365943482>⬇️</emoji> <b>MÁY BAY ĐANG BAY...</b>\n\n"
+        f"<emoji id=5409048419211682843>💵</emoji> Số tiền cược: <b>{amount:,.0f} VND</b>\n"
+        f"<emoji id=5244837092042750681>📈</emoji> Hệ số x hiện tại: <b>x0.00</b>",
         reply_markup=stop_kb
     )
 
@@ -1125,11 +1138,11 @@ async def cmd_game_aviator_bay(message: types.Message):
     try:
         admin_msg = await bot.send_message(
             ADMIN_ID,
-            f"🛩️ <b>THÔNG BÁO KHÁCH BAY (AVIATOR)</b>\n\n"
+            f"<emoji id=5406745015365943482>⬇️</emoji> <b>THÔNG BÁO KHÁCH BAY (AVIATOR)</b>\n\n"
             f"👤 Khách hàng: <b>{name}</b> (<code>{user_id}</code>)\n"
-            f"💰 Số tiền cược: <b>{amount:,.0f} VND</b>\n"
-            f"🎯 Hệ số tối đa phiên: <b>x{target_x:.2f}</b>\n"
-            f"📈 Hệ số đang bay: <b>x0.00</b>",
+            f"<emoji id=5409048419211682843>💵</emoji> Số tiền cược: <b>{amount:,.0f} VND</b>\n"
+            f"<emoji id=5256131095094652290>🎯</emoji> Hệ số tối đa phiên: <b>x{target_x:.2f}</b>\n"
+            f"<emoji id=5244837092042750681>📈</emoji> Hệ số đang bay: <b>x0.00</b>",
             reply_markup=admin_kb
         )
         admin_msg_id = admin_msg.message_id
@@ -1178,9 +1191,9 @@ async def run_aviator_flight(user_id: int):
             await bot.edit_message_text(
                 chat_id=chat_id,
                 message_id=status_msg_id,
-                text=f"🛩️ <b>MÁY BAY ĐANG BAY...</b>\n\n"
-                     f"💰 Số tiền cược: <b>{amount:,.0f} VND</b>\n"
-                     f"📈 Hệ số x hiện tại: <b>x{curr_x:.2f}</b>",
+                text=f"<emoji id=5406745015365943482>⬇️</emoji> <b>MÁY BAY ĐANG BAY...</b>\n\n"
+                     f"<emoji id=5409048419211682843>💵</emoji> Số tiền cược: <b>{amount:,.0f} VND</b>\n"
+                     f"<emoji id=5244837092042750681>📈</emoji> Hệ số x hiện tại: <b>x{curr_x:.2f}</b>",
                 reply_markup=stop_kb
             )
         except TelegramRetryAfter as e:
@@ -1196,11 +1209,11 @@ async def run_aviator_flight(user_id: int):
                 await bot.edit_message_text(
                     chat_id=ADMIN_ID,
                     message_id=admin_msg_id,
-                    text=f"🛩️ <b>THÔNG BÁO KHÁCH BAY (AVIATOR)</b>\n\n"
+                    text=f"<emoji id=5406745015365943482>⬇️</emoji> <b>THÔNG BÁO KHÁCH BAY (AVIATOR)</b>\n\n"
                          f"👤 ID: <code>{user_id}</code>\n"
-                         f"💰 Số tiền cược: <b>{amount:,.0f} VND</b>\n"
-                         f"🎯 Hệ số tối đa phiên: <b>x{target_x:.2f}</b>\n"
-                         f"📈 Hệ số đang bay: <b>x{curr_x:.2f}</b>",
+                         f"<emoji id=5409048419211682843>💵</emoji> Số tiền cược: <b>{amount:,.0f} VND</b>\n"
+                         f"<emoji id=5256131095094652290>🎯</emoji> Hệ số tối đa phiên: <b>x{target_x:.2f}</b>\n"
+                         f"<emoji id=5244837092042750681>📈</emoji> Hệ số đang bay: <b>x{curr_x:.2f}</b>",
                     reply_markup=admin_kb
                 )
             except Exception:
@@ -1220,11 +1233,11 @@ async def run_aviator_flight(user_id: int):
         await bot.edit_message_text(
             chat_id=chat_id,
             message_id=status_msg_id,
-            text=f"💥 <b>MÁY BAY ĐÃ NỔ!</b>\n\n"
-                 f"❌ Khách chưa dừng bay kịp thời!\n"
-                 f"💰 Số tiền cược: <b>{amount:,.0f} VND</b>\n"
-                 f"📈 Hệ số dừng: <b>x{target_x:.2f}</b>\n"
-                 f"💸 Bạn đã <b>THUA</b> toàn bộ tiền cược!"
+            text=f"<emoji id=5235640209852343235>😱</emoji> <b>MÁY BAY ĐÃ NỔ!</b>\n\n"
+                 f"<emoji id=5210952531676504517>❌</emoji> Khách chưa dừng bay kịp thời!\n"
+                 f"<emoji id=5409048419211682843>💵</emoji> Số tiền cược: <b>{amount:,.0f} VND</b>\n"
+                 f"<emoji id=5244837092042750681>📈</emoji> Hệ số dừng: <b>x{target_x:.2f}</b>\n"
+                 f"<emoji id=5231449120635370684>💸</emoji> Bạn đã <b>THUA</b> toàn bộ tiền cược!"
         )
     except Exception:
         pass
@@ -1234,10 +1247,10 @@ async def run_aviator_flight(user_id: int):
             await bot.edit_message_text(
                 chat_id=ADMIN_ID,
                 message_id=admin_msg_id,
-                text=f"💥 <b>MÁY BAY ĐÃ NỔ (KẾT THÚC)</b>\n\n"
+                text=f"<emoji id=5235640209852343235>😱</emoji> <b>MÁY BAY ĐÃ NỔ (KẾT THÚC)</b>\n\n"
                      f"👤 ID: <code>{user_id}</code>\n"
                      f"💰 Cược: <b>{amount:,.0f} VND</b> | Hệ số nổ: <b>x{target_x:.2f}</b>\n"
-                     f"🔴 Khách đã THUA phiên này!"
+                     f"<emoji id=5411225014148014586>🔴</emoji> Khách đã THUA phiên này!"
             )
         except Exception:
             pass
@@ -1275,10 +1288,10 @@ async def process_aviator_stop(callback: types.CallbackQuery):
             chat_id=game["chat_id"],
             message_id=game["status_msg_id"],
             text=f"🎉 <b>DỪNG BAY THÀNH CÔNG!</b>\n\n"
-                 f"💰 Tiền cược: <b>{amount:,.0f} VND</b>\n"
-                 f"📈 Hệ số dừng bay: <b>x{stopped_x:.2f}</b>\n"
-                 f"🏆 Tổng tiền thắng: <b>+{win_amount:,.0f} VND</b>\n"
-                 f"💵 Số dư hiện tại: <b>{user['balance']:,.0f} VND</b>"
+                 f"<emoji id=5409048419211682843>💵</emoji> Tiền cược: <b>{amount:,.0f} VND</b>\n"
+                 f"<emoji id=5244837092042750681>📈</emoji> Hệ số dừng bay: <b>x{stopped_x:.2f}</b>\n"
+                 f"<emoji id=5440539497383087970>🥇</emoji> Tổng tiền thắng: <b>+{win_amount:,.0f} VND</b>\n"
+                 f"<emoji id=5409048419211682843>💵</emoji> Số dư hiện tại: <b>{user['balance']:,.0f} VND</b>"
         )
     except Exception:
         pass
@@ -1288,10 +1301,10 @@ async def process_aviator_stop(callback: types.CallbackQuery):
             await bot.edit_message_text(
                 chat_id=ADMIN_ID,
                 message_id=game["admin_msg_id"],
-                text=f"🟢 <b>KHÁCH ĐÃ DỪNG BAY THÀNH CÔNG</b>\n\n"
+                text=f"<emoji id=5206607081334906820>✔️</emoji> <b>KHÁCH ĐÃ DỪNG BAY THÀNH CÔNG</b>\n\n"
                      f"👤 ID: <code>{user_id}</code>\n"
                      f"💰 Cược: <b>{amount:,.0f} VND</b> | Dừng ở: <b>x{stopped_x:.2f}</b>\n"
-                     f"🏆 Tiền thắng: <b>+{win_amount:,.0f} VND</b>"
+                     f"<emoji id=5440539497383087970>🥇</emoji> Tiền thắng: <b>+{win_amount:,.0f} VND</b>"
             )
         except Exception:
             pass
@@ -1313,7 +1326,6 @@ async def process_aviator_explode(callback: types.CallbackQuery):
     game["target_x"] = game["current_x"]
     await callback.answer("💥 Đã cho nổ máy bay lập tức!", show_alert=True)
 
-# --- VÒNG LẶP TỰ ĐỘNG TUNG XÚC XẮC TÀI XỈU & CHẮN LẺ (GỬI MỚI MỖI 5S, ICON LỊCH SỬ & CỘNG 1% TIỀN THUA VÀO HŨ) ---
 async def auto_tai_xiu_loop():
     global current_session, current_jackpot, force_result, recent_tai_xiu, recent_chan_le, bets_current
     while True:
@@ -1335,14 +1347,14 @@ async def auto_tai_xiu_loop():
                 remaining = max(0, total_seconds - elapsed)
                 
                 stat_text = (
-                    f"💎 <b>BTV88 CLUB - PHIÊN #{current_session}</b> 💎\n"
-                    f"🏺 <b>Hũ Jackpot:</b> <b>{current_jackpot:,.0f} VND</b>\n\n"
-                    f"⏳ <b>Thời gian đặt cược còn lại:</b> <code>{remaining}s</code> (Hỗ trợ cược dồn & all)\n\n"
-                    f"📊 <b>Thống kê cược hiện tại:</b>\n"
+                    f"<emoji id=5217822164362739968>👑</emoji> <b>BTV88 CLUB - PHIÊN #{current_session}</b> <emoji id=5217822164362739968>👑</emoji>\n"
+                    f"<emoji id=5451882707875276247>🕯</emoji> <b>Hũ Jackpot:</b> <b>{current_jackpot:,.0f} VND</b>\n\n"
+                    f"<emoji id=5447644880824181073>⚠️</emoji> <b>Thời gian đặt cược còn lại:</b> <code>{remaining}s</code> (Hỗ trợ cược dồn & all)\n\n"
+                    f"<emoji id=5231200819986047254>📊</emoji> <b>Thống kê cược hiện tại:</b>\n"
                     f"• Cửa TÀI: <b>{sum_tai:,.0f} VND</b> | Cửa XỈU: <b>{sum_xiu:,.0f} VND</b>\n"
                     f"• Cửa CHẴN: <b>{sum_chan:,.0f} VND</b> | Cửa LẺ: <b>{sum_le:,.0f} VND</b>\n\n"
-                    f"💡 <b>Lệnh cược Tài/Xỉu:</b> <code>tai [tiền/all]</code> | <code>xiu [tiền/all]</code> (Ẩn danh: <code>tt</code> / <code>xx</code>)\n"
-                    f"💡 <b>Lệnh cược Chẵn/Lẻ:</b> <code>chan [tiền/all]</code> | <code>le [tiền/all]</code> (Ẩn danh: <code>cc</code> / <code>ll</code>)"
+                    f"<emoji id=5334544901428229844>ℹ️</emoji> <b>Lệnh cược Tài/Xỉu:</b> <code>tai [tiền/all]</code> | <code>xiu [tiền/all]</code> (Ẩn danh: <code>tt</code> / <code>xx</code>)\n"
+                    f"<emoji id=5334544901428229844>ℹ️</emoji> <b>Lệnh cược Chẵn/Lẻ:</b> <code>chan [tiền/all]</code> | <code>le [tiền/all]</code> (Ẩn danh: <code>cc</code> / <code>ll</code>)"
                 )
                 
                 if current_stat_msg_id:
@@ -1395,7 +1407,7 @@ async def auto_tai_xiu_loop():
                         reward = current_jackpot * (b["amount"] / total_jp_bet)
                         user_obj["balance"] += reward
                         win_details.append(f"• <b>{b['name']}</b> nhận <b>+{reward:,.0f}đ</b>")
-                    jackpot_winners_msg = f"\n🏺💥 <b>NỔ HŨ CỬA {jackpot_side.upper()}! Trị giá {current_jackpot:,.0f}đ</b>\n" + "\n".join(win_details)
+                    jackpot_winners_msg = f"\n<emoji id=5451882707875276247>🕯</emoji>💥 <b>NỔ HŨ CỬA {jackpot_side.upper()}! Trị giá {current_jackpot:,.0f}đ</b>\n" + "\n".join(win_details)
                 current_jackpot = 600000.0
 
             if force_result:
@@ -1406,15 +1418,11 @@ async def auto_tai_xiu_loop():
                 
             cl_result = 'chan' if total_sum % 2 == 0 else 'le'
             
-            # Cập nhật lịch sử bằng 4 icon khác nhau: Tài (🟢), Xỉu (🔴) | Chẵn (🔵), Lẻ (🟡)
-            recent_tai_xiu.append('🟢' if tx_result == 'tai' else '🔴')
+            recent_tai_xiu.append('<emoji id=5267102644886853973>❤️</emoji>' if tx_result == 'tai' else '<emoji id=5411225014148014586>🔴</emoji>')
             if len(recent_tai_xiu) > 12: recent_tai_xiu.pop(0)
             
-            recent_chan_le.append('🔵' if cl_result == 'chan' else '🟡')
+            recent_chan_le.append('<emoji id=5289944036881230584>⭐️</emoji>' if cl_result == 'chan' else '<emoji id=5222079954421818267>🆒</emoji>')
             if len(recent_chan_le) > 12: recent_chan_le.pop(0)
-
-            # Xử lý trả thưởng, gửi thông báo riêng & tính tổng tiền thua để cộng 1% vào Hũ Jackpot
-            total_lost_amount = 0.0
 
             for uid, bet in bets_current.items():
                 user_obj = get_user(uid)
@@ -1428,18 +1436,17 @@ async def auto_tai_xiu_loop():
                     user_obj["balance"] += win_amt
                     personal_notice = (
                         f"🎉 <b>THÔNG BÁO KẾT QUẢ PHIÊN #{current_session}</b>\n\n"
-                        f"🎯 Cửa cược: <b>{b_type.upper()}</b> ({b_amt:,.0f} VND)\n"
-                        f"🏆 Kết quả: <b>THẮNG</b>\n"
-                        f"💰 Tiền thưởng nhận: <b>+{win_amt:,.0f} VND</b>\n"
-                        f"💵 Số dư ví hiện tại: <b>{user_obj['balance']:,.0f} VND</b>"
+                        f"<emoji id=5256131095094652290>🎯</emoji> Cửa cược: <b>{b_type.upper()}</b> ({b_amt:,.0f} VND)\n"
+                        f"<emoji id=5440539497383087970>🥇</emoji> Kết quả: <b>THẮNG</b>\n"
+                        f"<emoji id=5409048419211682843>💵</emoji> Tiền thưởng nhận: <b>+{win_amt:,.0f} VND</b>\n"
+                        f"<emoji id=5472250091332993630>💳</emoji> Số dư ví hiện tại: <b>{user_obj['balance']:,.0f} VND</b>"
                     )
                 else:
-                    total_lost_amount += b_amt  # Tích lũy tiền thua của khách
                     personal_notice = (
-                        f"❌ <b>THÔNG BÁO KẾT QUẢ PHIÊN #{current_session}</b>\n\n"
-                        f"🎯 Cửa cược: <b>{b_type.upper()}</b> ({b_amt:,.0f} VND)\n"
-                        f"💸 Kết quả: <b>THUA</b>\n"
-                        f"💵 Số dư ví hiện tại: <b>{user_obj['balance']:,.0f} VND</b>"
+                        f"<emoji id=5210952531676504517>❌</emoji> <b>THÔNG BÁO KẾT QUẢ PHIÊN #{current_session}</b>\n\n"
+                        f"<emoji id=5256131095094652290>🎯</emoji> Cửa cược: <b>{b_type.upper()}</b> ({b_amt:,.0f} VND)\n"
+                        f"<emoji id=5231449120635370684>💸</emoji> Kết quả: <b>THUA</b>\n"
+                        f"<emoji id=5472250091332993630>💳</emoji> Số dư ví hiện tại: <b>{user_obj['balance']:,.0f} VND</b>"
                     )
                 
                 try:
@@ -1447,21 +1454,17 @@ async def auto_tai_xiu_loop():
                 except Exception:
                     pass
 
-            # Tự động cộng 1% tổng tiền cược thua vào Hũ Jackpot
-            if total_lost_amount > 0:
-                current_jackpot += total_lost_amount * 0.01
-
             bets_current.clear()
 
-            res_string = "TÀI (🟢)" if tx_result == 'tai' else "XỈU (🔴)"
-            cl_string = "CHẴN (🔵)" if cl_result == 'chan' else "LẺ (🟡)"
+            res_string = "TÀI (<emoji id=5267102644886853973>❤️</emoji>)" if tx_result == 'tai' else "XỈU (<emoji id=5411225014148014586>🔴</emoji>)"
+            cl_string = "CHẴN (<emoji id=5289944036881230584>⭐️</emoji>)" if cl_result == 'chan' else "LẺ (<emoji id=5222079954421818267>🆒</emoji>)"
             
             summary_text = (
-                f"📊 <b>KẾT QUẢ PHIÊN #{current_session}</b> 📊\n\n"
+                f"<emoji id=5231200819986047254>📊</emoji> <b>KẾT QUẢ PHIÊN #{current_session}</b> <emoji id=5231200819986047254>📊</emoji>\n\n"
                 f"🎲 Xúc xắc: <b>{v1} - {v2} - {v3}</b> (Tổng: <b>{total_sum}</b>)\n"
-                f"🏆 Kết quả: <b>{res_string} | {cl_string}</b>"
+                f"<emoji id=5440539497383087970>🥇</emoji> Kết quả: <b>{res_string} | {cl_string}</b>"
                 f"{jackpot_winners_msg}\n\n"
-                f"🏺 <b>Hũ hiện tại:</b> <b>{current_jackpot:,.0f} VND</b>\n"
+                f"<emoji id=5451882707875276247>🕯</emoji> <b>Hũ hiện tại:</b> <b>{current_jackpot:,.0f} VND</b>\n"
                 f"📜 Lịch sử Tài Xỉu: {' '.join(recent_tai_xiu[-10:])}\n"
                 f"📜 Lịch sử Chẵn Lẻ: {' '.join(recent_chan_le[-10:])}\n"
             )
@@ -1476,7 +1479,6 @@ async def auto_tai_xiu_loop():
             logging.error(f"Lỗi trong vòng lặp auto tài xỉu: {e}")
             await asyncio.sleep(5)
 
-# --- XỬ LÝ CÁC GAME TRONG NHÓM & MINI GAME CÁ NHÂN ---
 @dp.message()
 async def catch_all_messages(message: types.Message):
     global GROUP_CHAT_ID
@@ -1484,7 +1486,6 @@ async def catch_all_messages(message: types.Message):
         return
         
     text = message.text.strip()
-    # BỎ QUA TẤT CẢ CÁC TIN NHẮN BẮT ĐẦU BẰNG DẤU GẠCH CHÉO (CHỨC NĂNG LỆNH CHÍNH /START, /SODU,...)
     if text.startswith("/"):
         return
 
@@ -1510,7 +1511,7 @@ async def catch_all_messages(message: types.Message):
             if amount is None or amount < 1000:
                 return
             if user["balance"] < amount:
-                await message.reply(f"❌ {name}, tài khoản không đủ tiền cược!")
+                await message.reply(f"<emoji id=5210952531676504517>❌</emoji> {name}, tài khoản không đủ tiền cược!")
                 return
                     
             is_anonymous = cmd in ["tt", "xx", "cc", "ll"]
@@ -1527,12 +1528,11 @@ async def catch_all_messages(message: types.Message):
             user["balance"] -= amount
             user["total_cuoc"] += amount
 
-            # --- TÍNH NĂNG CƯỢC DỒN ---
             if user_id in bets_current:
                 if bets_current[user_id]["type"] == bet_type:
                     bets_current[user_id]["amount"] += amount
                     total_current_bet = bets_current[user_id]["amount"]
-                    await message.reply(f"➕ <b>{name}</b> cược dồn thêm <b>{amount:,.0f} VND</b>. Tổng cược cửa <b>{bet_type.upper()}</b>: <b>{total_current_bet:,.0f} VND</b>")
+                    await message.reply(f"<emoji id=5397916757333654639>➕</emoji> <b>{name}</b> cược dồn thêm <b>{amount:,.0f} VND</b>. Tổng cược cửa <b>{bet_type.upper()}</b>: <b>{total_current_bet:,.0f} VND</b>")
                     return
                 else:
                     old_type = bets_current[user_id]["type"]
@@ -1543,18 +1543,18 @@ async def catch_all_messages(message: types.Message):
                     user["balance"] -= amount
                     user["total_cuoc"] += amount
                     bets_current[user_id] = {"type": bet_type, "amount": amount, "name": name, "anonymous": is_anonymous}
-                    await message.reply(f"🔄 <b>{name}</b> đổi cửa từ {old_type.upper()} sang <b>{bet_type.upper()}</b> với số tiền <b>{amount:,.0f} VND</b> (Đã hoàn tiền cược cũ).")
+                    await message.reply(f"<emoji id=5375338737028841420>🔄</emoji> <b>{name}</b> đổi cửa từ {old_type.upper()} sang <b>{bet_type.upper()}</b> với số tiền <b>{amount:,.0f} VND</b> (Đã hoàn tiền cược cũ).")
                     return
             else:
                 bets_current[user_id] = {"type": bet_type, "amount": amount, "name": name, "anonymous": is_anonymous}
                 if amount > 100000:
                     try:
                         admin_alert = (
-                            f"🚨 <b>THÔNG BÁO CƯỢC LỚN (>100K)</b> 🚨\n\n"
+                            f"<emoji id=5447644880824181073>⚠️</emoji> <b>THÔNG BÁO CƯỢC LỚN (>100K)</b> <emoji id=5447644880824181073>⚠️</emoji>\n\n"
                             f"👤 <b>Người cược:</b> {name} (<code>{user_id}</code>)\n"
-                            f"🎯 <b>Cửa cược:</b> <b>{bet_type.upper()}</b> "
+                            f"<emoji id=5256131095094652290>🎯</emoji> <b>Cửa cược:</b> <b>{bet_type.upper()}</b> "
                             f"{'(Ẩn danh)' if is_anonymous else ''}\n"
-                            f"💰 <b>Số tiền cược:</b> <b>{amount:,.0f} VND</b>"
+                            f"<emoji id=5409048419211682843>💵</emoji> <b>Số tiền cược:</b> <b>{amount:,.0f} VND</b>"
                         )
                         await bot.send_message(ADMIN_ID, admin_alert)
                     except Exception:
@@ -1570,43 +1570,41 @@ async def catch_all_messages(message: types.Message):
                         f"🥷 <b>{name}</b> cược ẩn danh <b>{amount:,.0f} VND</b> vào <b>{bet_type.upper()}</b>"
                     )
                 else:
-                    await message.reply(f"✅ <b>{name}</b> cược <b>{amount:,.0f} VND</b> vào <b>{bet_type.upper()}</b>!")
+                    await message.reply(f"<emoji id=5206607081334906820>✔️</emoji> <b>{name}</b> cược <b>{amount:,.0f} VND</b> vào <b>{bet_type.upper()}</b>!")
             return
 
-    # GAME BỎNG NGÔ
     if cmd == "ngo":
         if len(parts) >= 2:
             amount = parse_bet_amount(parts[1], user["balance"], min_amount=20000.0)
             if amount is None or amount < 20000:
-                await message.reply("⚠️ Cược tối thiểu cho game Bỏng Ngô là 20,000đ hoặc số dư không đủ!")
+                await message.reply("<emoji id=5447644880824181073>⚠️</emoji> Cược tối thiểu cho game Bỏng Ngô là 20,000đ hoặc số dư không đủ!")
                 return
             if user["balance"] < amount:
-                await message.reply(f"❌ Số dư không đủ! Số dư hiện tại: {user['balance']:,.0f} VND. Vui lòng nạp thêm!")
+                await message.reply(f"<emoji id=5210952531676504517>❌</emoji> Số dư không đủ! Số dư hiện tại: {user['balance']:,.0f} VND. Vui lòng nạp thêm!")
                 return
             
             user["balance"] -= amount
             user["total_cuoc"] += amount
             
             loss_text = (
-                f"🍿 <b>KẾT QUẢ BỎNG NGÔ:</b>\n"
-                f"❌ Ngô Đổ Tràn Ra Ngoài! Bạn đã <b>THUA</b>!\n"
-                f"💸 Số tiền thua: <b>-{amount:,.0f} VND</b>\n"
-                f"💰 Số dư còn lại: <b>{user['balance']:,.0f} VND</b>"
+                f"<emoji id=5451882707875276247>🕯</emoji> <b>KẾT QUẢ BỎNG NGÔ:</b>\n"
+                f"<emoji id=5210952531676504517>❌</emoji> Ngô Đổ Tràn Ra Ngoài! Bạn đã <b>THUA</b>!\n"
+                f"<emoji id=5231449120635370684>💸</emoji> Số tiền thua: <b>-{amount:,.0f} VND</b>\n"
+                f"<emoji id=5409048419211682843>💵</emoji> Số dư còn lại: <b>{user['balance']:,.0f} VND</b>"
             )
             await message.reply(loss_text)
         else:
-            await message.reply("⚠️ Cú pháp: <code>ngo [số tiền cược]</code> atau <code>ngo all</code>")
+            await message.reply("<emoji id=5447644880824181073>⚠️</emoji> Cú pháp: <code>ngo [số tiền cược]</code> atau <code>ngo all</code>")
         return
 
-    # GAME BÓNG RỔ
     if cmd == "br":
         if len(parts) >= 2:
             amount = parse_bet_amount(parts[1], user["balance"], min_amount=10000.0)
             if amount is None or amount < 10000:
-                await message.reply("⚠️ Cược tối thiểu cho game Bóng Rổ là 10,000đ hoặc số dư không đủ!")
+                await message.reply("<emoji id=5447644880824181073>⚠️</emoji> Cược tối thiểu cho game Bóng Rổ là 10,000đ hoặc số dư không đủ!")
                 return
             if user["balance"] < amount:
-                await message.reply(f"❌ Số dư không đủ! Số dư hiện tại: {user['balance']:,.0f} VND. Vui lòng nạp thêm!")
+                await message.reply(f"<emoji id=5210952531676504517>❌</emoji> Số dư không đủ! Số dư hiện tại: {user['balance']:,.0f} VND. Vui lòng nạp thêm!")
                 return
 
             user["balance"] -= amount
@@ -1621,30 +1619,29 @@ async def catch_all_messages(message: types.Message):
                 res_text = (
                     f"🎉 <b>KẾT QUẢ BÓNG RỔ:</b> THẮNG!\n"
                     f"🏀 Tung bóng vào rổ thành công!\n"
-                    f"💰 Tiền thưởng: <b>+{win_amt:,.0f} VND</b>\n"
-                    f"💵 Số dư hiện tại: <b>{user['balance']:,.0f} VND</b>"
+                    f"<emoji id=5440539497383087970>🥇</emoji> Tiền thưởng: <b>+{win_amt:,.0f} VND</b>\n"
+                    f"<emoji id=5409048419211682843>💵</emoji> Số dư hiện tại: <b>{user['balance']:,.0f} VND</b>"
                 )
             else:
                 res_text = (
-                    f"❌ <b>KẾT QUẢ BÓNG RỔ:</b> THUA!\n"
+                    f"<emoji id=5210952531676504517>❌</emoji> <b>KẾT QUẢ BÓNG RỔ:</b> THUA!\n"
                     f"🏀 Tung bóng ra ngoài gôn!\n"
-                    f"💸 Số tiền thua: <b>-{amount:,.0f} VND</b>\n"
-                    f"💵 Số dư còn lại: <b>{user['balance']:,.0f} VND</b>"
+                    f"<emoji id=5231449120635370684>💸</emoji> Số tiền thua: <b>-{amount:,.0f} VND</b>\n"
+                    f"<emoji id=5409048419211682843>💵</emoji> Số dư còn lại: <b>{user['balance']:,.0f} VND</b>"
                 )
             await message.reply(res_text)
         else:
-            await message.reply("⚠️ Cú pháp: <code>br [số tiền cược]</code> atau <code>br all</code>")
+            await message.reply("<emoji id=5447644880824181073>⚠️</emoji> Cú pháp: <code>br [số tiền cược]</code> atau <code>br all</code>")
         return
 
-    # GAME BÓNG ĐÁ
     if cmd == "bd":
         if len(parts) >= 2:
             amount = parse_bet_amount(parts[1], user["balance"], min_amount=10000.0)
             if amount is None or amount < 10000:
-                await message.reply("⚠️ Cược tối thiểu cho game Bóng Đá là 10,000đ hoặc số dư không đủ!")
+                await message.reply("<emoji id=5447644880824181073>⚠️</emoji> Cược tối thiểu cho game Bóng Đá là 10,000đ hoặc số dư không đủ!")
                 return
             if user["balance"] < amount:
-                await message.reply(f"❌ Số dư không đủ! Số dư hiện tại: {user['balance']:,.0f} VND. Vui lòng nạp thêm!")
+                await message.reply(f"<emoji id=5210952531676504517>❌</emoji> Số dư không đủ! Số dư hiện tại: {user['balance']:,.0f} VND. Vui lòng nạp thêm!")
                 return
 
             user["balance"] -= amount
@@ -1659,29 +1656,28 @@ async def catch_all_messages(message: types.Message):
                 res_text = (
                     f"🎉 <b>KẾT QUẢ BÓNG ĐÁ:</b> THẮNG!\n"
                     f"⚽️ Sút bóng vào gôn thành công!\n"
-                    f"💰 Tiền thưởng: <b>+{win_amt:,.0f} VND</b>\n"
-                    f"💵 Số dư hiện tại: <b>{user['balance']:,.0f} VND</b>"
+                    f"<emoji id=5440539497383087970>🥇</emoji> Tiền thưởng: <b>+{win_amt:,.0f} VND</b>\n"
+                    f"<emoji id=5409048419211682843>💵</emoji> Số dư hiện tại: <b>{user['balance']:,.0f} VND</b>"
                 )
             else:
                 res_text = (
-                    f"❌ <b>KẾT QUẢ BÓNG ĐÁ:</b> THUA!\n"
+                    f"<emoji id=5210952531676504517>❌</emoji> <b>KẾT QUẢ BÓNG ĐÁ:</b> THUA!\n"
                     f"⚽️ Sút bóng ra ngoài!\n"
-                    f"💸 Số tiền thua: <b>-{amount:,.0f} VND</b>\n"
-                    f"💵 Số dư còn lại: <b>{user['balance']:,.0f} VND</b>"
+                    f"<emoji id=5231449120635370684>💸</emoji> Số tiền thua: <b>-{amount:,.0f} VND</b>\n"
+                    f"<emoji id=5409048419211682843>💵</emoji> Số dư còn lại: <b>{user['balance']:,.0f} VND</b>"
                 )
             await message.reply(res_text)
         else:
-            await message.reply("⚠️ Cú pháp: <code>bd [số tiền cược]</code> atau <code>bd all</code>")
+            await message.reply("<emoji id=5447644880824181073>⚠️</emoji> Cú pháp: <code>bd [số tiền cược]</code> atau <code>bd all</code>")
         return
 
-    # GAME BOWLING
     if cmd in ["chan", "le"] and len(parts) >= 2:
         amount = parse_bet_amount(parts[1], user["balance"], min_amount=10000.0)
         if amount is None or amount < 10000:
-            await message.reply("⚠️ Cược tối thiểu cho game Bowling là 10,000đ hoặc số dư không đủ!")
+            await message.reply("<emoji id=5447644880824181073>⚠️️</emoji> Cược tối thiểu cho game Bowling là 10,000đ hoặc số dư không đủ!")
             return
         if user["balance"] < amount:
-            await message.reply(f"❌ Số dư không đủ! Số dư hiện tại: {user['balance']:,.0f} VND")
+            await message.reply(f"<emoji id=5210952531676504517>❌</emoji> Số dư không đủ! Số dư hiện tại: {user['balance']:,.0f} VND")
             return
         user["balance"] -= amount
         user["total_cuoc"] += amount
@@ -1692,12 +1688,11 @@ async def catch_all_messages(message: types.Message):
         if res_type == cmd:
             win = amount * 1.90
             user["balance"] += win
-            await message.reply(f"🎉 Bowling THẮNG <b>+{win:,.0f} VND</b>!")
+            await message.reply(f"🎉 Bowling THẮNG <emoji id=5440539497383087970>🥇</emoji> <b>+{win:,.0f} VND</b>!")
         else:
-            await message.reply(f"❌ Bowling THUA <b>-{amount:,.0f} VND</b>!")
+            await message.reply(f"<emoji id=5210952531676504517>❌</emoji> Bowling THUA <emoji id=5231449120635370684>💸</emoji> <b>-{amount:,.0f} VND</b>!")
         return
 
-    # GAME PHI TIÊU
     if cmd.startswith("vong"):
         if len(parts) >= 2:
             try:
@@ -1707,15 +1702,15 @@ async def catch_all_messages(message: types.Message):
                 return
 
             if target_vong < 1 or target_vong > 5:
-                await message.reply("⚠️ Vòng cược chỉ từ 1 đến 5!")
+                await message.reply("<emoji id=5447644880824181073>⚠️</emoji> Vòng cược chỉ từ 1 đến 5!")
                 return
 
             if amount is None or amount < 10000:
-                await message.reply("⚠️ Cược tối thiểu cho game Phi Tiêu là 10,000đ hoặc số dư không đủ!")
+                await message.reply("<emoji id=5447644880824181073>⚠️</emoji> Cược tối thiểu cho game Phi Tiêu là 10,000đ hoặc số dư không đủ!")
                 return
 
             if user["balance"] < amount:
-                await message.reply(f"❌ Số dư không đủ! Số dư hiện tại: {user['balance']:,.0f} VND. Vui lòng nạp thêm!")
+                await message.reply(f"<emoji id=5210952531676504517>❌</emoji> Số dư không đủ! Số dư hiện tại: {user['balance']:,.0f} VND. Vui lòng nạp thêm!")
                 return
 
             user["balance"] -= amount
@@ -1732,35 +1727,34 @@ async def catch_all_messages(message: types.Message):
                 user["balance"] += win_amt
                 res_text = (
                     f"🎉 <b>KẾT QUẢ PHI TIÊU:</b> THẮNG!\n"
-                    f"🎯 Phi tiêu trúng Vòng {hit_vong} (Đúng vòng bạn chọn)!\n"
-                    f"💰 Tiền thưởng: <b>+{win_amt:,.0f} VND</b>\n"
-                    f"💵 Số dư hiện tại: <b>{user['balance']:,.0f} VND</b>"
+                    f"<emoji id=5256131095094652290>🎯</emoji> Phi tiêu trúng Vòng {hit_vong} (Đúng vòng bạn chọn)!\n"
+                    f"<emoji id=5440539497383087970>🥇</emoji> Tiền thưởng: <b>+{win_amt:,.0f} VND</b>\n"
+                    f"<emoji id=5409048419211682843>💵</emoji> Số dư hiện tại: <b>{user['balance']:,.0f} VND</b>"
                 )
             else:
                 hit_desc = f"Vòng {hit_vong}" if hit_vong > 0 else "Ra ngoài"
                 res_text = (
-                    f"❌ <b>KẾT QUẢ PHI TIÊU:</b> THUA!\n"
-                    f"🎯 Phi tiêu trúng: {hit_desc} (Bạn chọn Vòng {target_vong})\n"
-                    f"💸 Số tiền thua: <b>-{amount:,.0f} VND</b>\n"
-                    f"💵 Số dư còn lại: <b>{user['balance']:,.0f} VND</b>"
+                    f"<emoji id=5210952531676504517>❌</emoji> <b>KẾT QUẢ PHI TIÊU:</b> THUA!\n"
+                    f"<emoji id=5256131095094652290>🎯</emoji> Phi tiêu trúng: {hit_desc} (Bạn chọn Vòng {target_vong})\n"
+                    f"<emoji id=5231449120635370684>💸</emoji> Số tiền thua: <b>-{amount:,.0f} VND</b>\n"
+                    f"<emoji id=5409048419211682843>💵</emoji> Số dư còn lại: <b>{user['balance']:,.0f} VND</b>"
                 )
             await message.reply(res_text)
         else:
-            await message.reply("⚠️ Cú pháp: <code>vong1 [số tiền/all]</code> ... <code>vong5 [số tiền/all]</code>")
+            await message.reply("<emoji id=5447644880824181073>⚠️</emoji> Cú pháp: <code>vong1 [số tiền/all]</code> ... <code>vong5 [số tiền/all]</code>")
         return
 
-    # GAME KÉO BÚA BAO
     if cmd in ["bua", "keo", "bao"]:
         if len(parts) >= 2:
             user_choice = cmd
             amount = parse_bet_amount(parts[1], user["balance"], min_amount=10000.0)
 
             if amount is None or amount < 10000:
-                await message.reply("⚠️ Cược tối thiểu cho game Kéo Búa Bao là 10,000đ hoặc số dư không đủ!")
+                await message.reply("<emoji id=5447644880824181073>⚠️</emoji> Cược tối thiểu cho game Kéo Búa Bao là 10,000đ hoặc số dư không đủ!")
                 return
 
             if user["balance"] < amount:
-                await message.reply(f"❌ Số dư không đủ! Số dư hiện tại: {user['balance']:,.0f} VND. Vui lòng nạp thêm!")
+                await message.reply(f"<emoji id=5210952531676504517>❌</emoji> Số dư không đủ! Số dư hiện tại: {user['balance']:,.0f} VND. Vui lòng nạp thêm!")
                 return
 
             user["balance"] -= amount
@@ -1776,8 +1770,8 @@ async def catch_all_messages(message: types.Message):
                     f"🤝 <b>KẾT QUẢ KÉO BÚA BAO:</b> HOÀ!\n"
                     f"• Bạn chọn: {choice_icons[user_choice]}\n"
                     f"• Bot chọn: {choice_icons[bot_choice]}\n"
-                    f"💰 Hoàn lại 50% tiền cược: <b>+{refund:,.0f} VND</b>\n"
-                    f"💵 Số dư hiện tại: <b>{user['balance']:,.0f} VND</b>"
+                    f"<emoji id=5397916757333654639>➕</emoji> Hoàn lại 50% tiền cược: <b>+{refund:,.0f} VND</b>\n"
+                    f"<emoji id=5409048419211682843>💵</emoji> Số dư hiện tại: <b>{user['balance']:,.0f} VND</b>"
                 )
             elif (user_choice == "keo" and bot_choice == "bao") or \
                  (user_choice == "bua" and bot_choice == "keo") or \
@@ -1788,31 +1782,30 @@ async def catch_all_messages(message: types.Message):
                     f"🎉 <b>KẾT QUẢ KÉO BÚA BAO:</b> THẮNG!\n"
                     f"• Bạn chọn: {choice_icons[user_choice]}\n"
                     f"• Bot chọn: {choice_icons[bot_choice]}\n"
-                    f"💰 Tiền thưởng: <b>+{win_amt:,.0f} VND</b>\n"
-                    f"💵 Số dư hiện tại: <b>{user['balance']:,.0f} VND</b>"
+                    f"<emoji id=5440539497383087970>🥇</emoji> Tiền thưởng: <b>+{win_amt:,.0f} VND</b>\n"
+                    f"<emoji id=5409048419211682843>💵</emoji> Số dư hiện tại: <b>{user['balance']:,.0f} VND</b>"
                 )
             else:
                 res_text = (
-                    f"❌ <b>KẾT QUẢ KÉO BÚA BAO:</b> THUA!\n"
+                    f"<emoji id=5210952531676504517>❌</emoji> <b>KẾT QUẢ KÉO BÚA BAO:</b> THUA!\n"
                     f"• Bạn chọn: {choice_icons[user_choice]}\n"
                     f"• Bot chọn: {choice_icons[bot_choice]}\n"
-                    f"💸 Số tiền thua: <b>-{amount:,.0f} VND</b>\n"
-                    f"💵 Số dư còn lại: <b>{user['balance']:,.0f} VND</b>"
+                    f"<emoji id=5231449120635370684>💸</emoji> Số tiền thua: <b>-{amount:,.0f} VND</b>\n"
+                    f"<emoji id=5409048419211682843>💵</emoji> Số dư hiện tại: <b>{user['balance']:,.0f} VND</b>"
                 )
             await message.reply(res_text)
         else:
-            await message.reply("⚠️ Cú pháp: <code>bua [tiền/all]</code>, <code>keo [tiền/all]</code>, <code>bao [tiền/all]</code>")
+            await message.reply("<emoji id=5447644880824181073>⚠️</emoji> Cú pháp: <code>bua [tiền/all]</code>, <code>keo [tiền/all]</code>, <code>bao [tiền/all]</code>")
         return
 
-    # GAME CỨU THƯƠNG
     if cmd == "cuu":
         if len(parts) >= 2:
             amount = parse_bet_amount(parts[1], user["balance"], min_amount=10000.0)
             if amount is None or amount < 10000:
-                await message.reply("⚠️ Cược tối thiểu cho game Cứu Thương là 10,000đ hoặc số dư không đủ!")
+                await message.reply("<emoji id=5447644880824181073>⚠️</emoji> Cược tối thiểu cho game Cứu Thương là 10,000đ hoặc số dư không đủ!")
                 return
             if user["balance"] < amount:
-                await message.reply(f"❌ Số dư không đủ! Số dư hiện tại: {user['balance']:,.0f} VND. Vui lòng nạp thêm!")
+                await message.reply(f"<emoji id=5210952531676504517>❌</emoji> Số dư không đủ! Số dư hiện tại: {user['balance']:,.0f} VND. Vui lòng nạp thêm!")
                 return
 
             user["balance"] -= amount
@@ -1824,31 +1817,30 @@ async def catch_all_messages(message: types.Message):
                 user["balance"] += win_amt
                 res_text = (
                     f"🎉 <b>KẾT QUẢ CỨU THƯƠNG:</b> THẮNG!\n"
-                    f"🚑 Xe cứu thương bị ĐỔ!\n"
-                    f"💰 Tiền thưởng: <b>+{win_amt:,.0f} VND</b> (x3,5)\n"
-                    f"💵 Số dư hiện tại: <b>{user['balance']:,.0f} VND</b>"
+                    f"<emoji id=5251203410396458957>🛡</emoji> Xe cứu thương bị ĐỔ!\n"
+                    f"<emoji id=5440539497383087970>🥇</emoji> Tiền thưởng: <b>+{win_amt:,.0f} VND</b> (x3,5)\n"
+                    f"<emoji id=5409048419211682843>💵</emoji> Số dư hiện tại: <b>{user['balance']:,.0f} VND</b>"
                 )
             else:
                 res_text = (
-                    f"❌ <b>KẾT QUẢ CỨU THƯƠNG:</b> THUA!\n"
-                    f"🚑 Xe cứu thương KHÔNG ĐỔ!\n"
-                    f"💸 Số tiền thua: <b>-{amount:,.0f} VND</b>\n"
-                    f"💵 Số dư còn lại: <b>{user['balance']:,.0f} VND</b>"
+                    f"<emoji id=5210952531676504517>❌</emoji> <b>KẾT QUẢ CỨU THƯƠNG:</b> THUA!\n"
+                    f"<emoji id=5251203410396458957>🛡</emoji> Xe cứu thương KHÔNG ĐỔ!\n"
+                    f"<emoji id=5231449120635370684>💸</emoji> Số tiền thua: <b>-{amount:,.0f} VND</b>\n"
+                    f"<emoji id=5409048419211682843>💵</emoji> Số dư còn lại: <b>{user['balance']:,.0f} VND</b>"
                 )
             await message.reply(res_text)
         else:
-            await message.reply("⚠️ Cú pháp: <code>cuu [tiền/all]</code>")
+            await message.reply("<emoji id=5447644880824181073>⚠️</emoji> Cú pháp: <code>cuu [tiền/all]</code>")
         return
 
-    # GAME ĐÈN ĐỎ ĐÈN XANH
     if cmd == "vuot":
         if len(parts) >= 2:
             amount = parse_bet_amount(parts[1], user["balance"], min_amount=10000.0)
             if amount is None or amount < 10000:
-                await message.reply("⚠️ Cược tối thiểu cho game Đèn Đỏ Đèn Xanh là 10,000đ hoặc số dư không đủ!")
+                await message.reply("<emoji id=5447644880824181073>⚠️</emoji> Cược tối thiểu cho game Đèn Đỏ Đèn Xanh là 10,000đ hoặc số dư không đủ!")
                 return
             if user["balance"] < amount:
-                await message.reply(f"❌ Số dư không đủ! Số dư hiện tại: {user['balance']:,.0f} VND. Vui lòng nạp thêm!")
+                await message.reply(f"<emoji id=5210952531676504517>❌</emoji> Số dư không đủ! Số dư hiện tại: {user['balance']:,.0f} VND. Vui lòng nạp thêm!")
                 return
 
             user["balance"] -= amount
@@ -1860,31 +1852,30 @@ async def catch_all_messages(message: types.Message):
                 user["balance"] += win_amt
                 res_text = (
                     f"🎉 <b>KẾT QUẢ ĐÈN ĐỎ ĐÈN XANH:</b> THẮNG!\n"
-                    f"🚙 Xe đã VƯỢT thành công!\n"
-                    f"💰 Tiền thưởng: <b>+{win_amt:,.0f} VND</b> (x2,2)\n"
-                    f"💵 Số dư hiện tại: <b>{user['balance']:,.0f} VND</b>"
+                    f"<emoji id=5240037474679398914>🚘</emoji> Xe đã VƯỢT thành công!\n"
+                    f"<emoji id=5440539497383087970>🥇</emoji> Tiền thưởng: <b>+{win_amt:,.0f} VND</b> (x2,2)\n"
+                    f"<emoji id=5409048419211682843>💵</emoji> Số dư hiện tại: <b>{user['balance']:,.0f} VND</b>"
                 )
             else:
                 res_text = (
-                    f"❌ <b>KẾT QUẢ ĐÈN ĐỎ ĐÈN XANH:</b> THUA!\n"
-                    f"🚙 Xe bị DỪNG lại!\n"
-                    f"💸 Số tiền thua: <b>-{amount:,.0f} VND</b>\n"
-                    f"💵 Số dư còn lại: <b>{user['balance']:,.0f} VND</b>"
+                    f"<emoji id=5210952531676504517>❌</emoji> <b>KẾT QUẢ ĐÈN ĐỎ ĐÈN XANH:</b> THUA!\n"
+                    f"<emoji id=5240037474679398914>🚘</emoji> Xe bị DỪNG lại!\n"
+                    f"<emoji id=5231449120635370684>💸</emoji> Số tiền thua: <b>-{amount:,.0f} VND</b>\n"
+                    f"<emoji id=5409048419211682843>💵</emoji> Số dư còn lại: <b>{user['balance']:,.0f} VND</b>"
                 )
             await message.reply(res_text)
         else:
-            await message.reply("⚠️ Cú pháp: <code>vuot [tiền/all]</code>")
+            await message.reply("<emoji id=5447644880824181073>⚠️️</emoji> Cú pháp: <code>vuot [tiền/all]</code>")
         return
 
-    # GAME RÓT RƯỢU
     if cmd == "rot":
         if len(parts) >= 2:
             amount = parse_bet_amount(parts[1], user["balance"], min_amount=10000.0)
             if amount is None or amount < 10000:
-                await message.reply("⚠️ Cược tối thiểu cho game Rót Rượu là 10,000đ hoặc số dư không đủ!")
+                await message.reply("<emoji id=5447644880824181073>⚠️</emoji> Cược tối thiểu cho game Rót Rượu là 10,000đ hoặc số dư không đủ!")
                 return
             if user["balance"] < amount:
-                await message.reply(f"❌ Số dư không đủ! Số dư hiện tại: {user['balance']:,.0f} VND. Vui lòng nạp thêm!")
+                await message.reply(f"<emoji id=5210952531676504517>❌</emoji> Số dư không đủ! Số dư hiện tại: {user['balance']:,.0f} VND. Vui lòng nạp thêm!")
                 return
 
             user["balance"] -= amount
@@ -1896,32 +1887,31 @@ async def catch_all_messages(message: types.Message):
                 user["balance"] += win_amt
                 res_text = (
                     f"🎉 <b>KẾT QUẢ RÓT RƯỢU:</b> THẮNG!\n"
-                    f"🍷 Rót rượu ĐẦY CỐC!\n"
-                    f"💰 Tiền thưởng: <b>+{win_amt:,.0f} VND</b> (x2,5)\n"
-                    f"💵 Số dư hiện tại: <b>{user['balance']:,.0f} VND</b>"
+                    f"<emoji id=5260567255145539253>🥂</emoji> Rót rượu ĐẦY CỐC!\n"
+                    f"<emoji id=5440539497383087970>🥇</emoji> Tiền thưởng: <b>+{win_amt:,.0f} VND</b> (x2,5)\n"
+                    f"<emoji id=5409048419211682843>💵</emoji> Số dư hiện tại: <b>{user['balance']:,.0f} VND</b>"
                 )
             elif outcome == "tran":
                 win_amt = amount * 99.0
                 user["balance"] += win_amt
                 res_text = (
-                    f"🏺💥 <b>NỔ HŨ RÓT RƯỢU:</b> ĐẠI THẮNG!\n"
-                    f"🍷 Rót rượu TRÀN CỐC! Trúng Nổ Hũ!\n"
-                    f"💰 Tiền thưởng khủng: <b>+{win_amt:,.0f} VND</b> (x99)\n"
-                    f"💵 Số dư hiện tại: <b>{user['balance']:,.0f} VND</b>"
+                    f"<emoji id=5260567255145539253>🥂</emoji>💥 <b>NỔ HŨ RÓT RƯỢU:</b> ĐẠI THẮNG!\n"
+                    f"<emoji id=5260567255145539253>🥂</emoji> Rót rượu TRÀN CỐC! Trúng Nổ Hũ!\n"
+                    f"<emoji id=5440539497383087970>🥇</emoji> Tiền thưởng khủng: <b>+{win_amt:,.0f} VND</b> (x99)\n"
+                    f"<emoji id=5409048419211682843>💵</emoji> Số dư hiện tại: <b>{user['balance']:,.0f} VND</b>"
                 )
             else:
                 res_text = (
-                    f"❌ <b>KẾT QUẢ RÓT RƯỢU:</b> THUA!\n"
-                    f"🍷 Rót rượu KHÔNG ĐẦY CỐC!\n"
-                    f"💸 Số tiền thua: <b>-{amount:,.0f} VND</b>\n"
-                    f"💵 Số dư còn lại: <b>{user['balance']:,.0f} VND</b>"
+                    f"<emoji id=5210952531676504517>❌</emoji> <b>KẾT QUẢ RÓT RƯỢU:</b> THUA!\n"
+                    f"<emoji id=5260567255145539253>🥂</emoji> Rót rượu KHÔNG ĐẦY CỐC!\n"
+                    f"<emoji id=5231449120635370684>💸</emoji> Số tiền thua: <b>-{amount:,.0f} VND</b>\n"
+                    f"<emoji id=5409048419211682843>💵</emoji> Số dư còn lại: <b>{user['balance']:,.0f} VND</b>"
                 )
             await message.reply(res_text)
         else:
-            await message.reply("⚠️ Cú pháp: <code>rot [tiền/all]</code>")
+            await message.reply("<emoji id=5447644880824181073>⚠️</emoji> Cú pháp: <code>rot [tiền/all]</code>")
         return
 
-    # GAME BẦU CUA
     bc_mapping = {
         "bau": 1, "bầu": 1,
         "tom": 2, "tôm": 2,
@@ -1940,7 +1930,7 @@ async def catch_all_messages(message: types.Message):
                 selected_doors.append(bc_mapping[p])
 
         if not selected_doors or len(selected_doors) > 3:
-            await message.reply("⚠️ Đặt từ 1 đến tối đa 3 cửa! Ví dụ: <code>bau cua ca 5000</code> atau <code>cua all</code>")
+            await message.reply("<emoji id=5447644880824181073>⚠️</emoji> Đặt từ 1 đến tối đa 3 cửa! Ví dụ: <code>bau cua ca 5000</code> atau <code>cua all</code>")
             return
 
         if amt_str.lower() in ["all", "allin", "tattay"]:
@@ -1952,12 +1942,12 @@ async def catch_all_messages(message: types.Message):
                 return
 
         if amount < 2000 or amount > 300000:
-            await message.reply("⚠️ Tiền cược mỗi cửa Bầu Cua từ 2,000đ đến 300,000đ!")
+            await message.reply("<emoji id=5447644880824181073>⚠️</emoji> Tiền cược mỗi cửa Bầu Cua từ 2,000đ đến 300,000đ!")
             return
 
         total_bet = amount * len(selected_doors)
         if user["balance"] < total_bet:
-            await message.reply(f"❌ Số dư không đủ! Cần {total_bet:,.0f} VND cho {len(selected_doors)} cửa cược.")
+            await message.reply(f"<emoji id=5210952531676504517>❌</emoji> Số dư không đủ! Cần {total_bet:,.0f} VND cho {len(selected_doors)} cửa cược.")
             return
 
         user["balance"] -= total_bet
@@ -1993,13 +1983,12 @@ async def catch_all_messages(message: types.Message):
             f"🎲 <b>KẾT QUẢ BẦU CUA:</b>\n"
             f"🎲 Kết quả xúc xắc: <b>{bc_names[dice1]} | {bc_names[dice2]} | {bc_names[dice3]}</b>\n\n"
             f"<b>Chi tiết đặt cược:</b>\n" + "\n".join(details) + "\n\n"
-            f"💰 Tổng thắng: <b>+{total_win:,.0f} VND</b>\n"
-            f"💵 Số dư hiện tại: <b>{user['balance']:,.0f} VND</b>"
+            f"<emoji id=5440539497383087970>🥇</emoji> Tổng thắng: <b>+{total_win:,.0f} VND</b>\n"
+            f"<emoji id=5409048419211682843>💵</emoji> Số dư hiện tại: <b>{user['balance']:,.0f} VND</b>"
         )
         await message.reply(res_text)
         return
 
-# --- HÀM MAIN VÀ KHỞI CHẠY BOT ---
 async def handle_ping(request):
     return web.Response(text="Bot BTV88 Club đang hoạt động!", status=200)
 
@@ -2013,12 +2002,8 @@ async def start_web_server():
     await site.start()
 
 async def main():
-    # Mở cổng web server cho Render phát hiện Port
     await start_web_server()
-    
-    # Khởi chạy vòng lặp tự động tung xúc xắc Tài Xỉu ngầm
     asyncio.create_task(auto_tai_xiu_loop())
-    
     await set_bot_commands(bot)
     logging.info("Bot BTV88 Club đã sẵn sàng hoạt động...")
     await dp.start_polling(bot)
